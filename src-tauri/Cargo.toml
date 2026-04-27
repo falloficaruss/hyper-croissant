@@ -1,0 +1,42 @@
+[package]
+name = "hyper-croissant"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "hyper_croissant_lib"
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+# Tauri v2
+tauri = { version = "2.0.0", features = [] }
+tauri-plugin-shell = "2.0.0"
+
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+
+# Chess logic
+shakmaty = "0.26"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# UCI/Movelist parsing
+shakmaty-uci = "0.25"
+
+[dependencies.tauri-build]
+version = "2.0.0"
+
+
+[features]
+default = []
+custom-protocol = ["tauri/custom-protocol"]
