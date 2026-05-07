@@ -1,0 +1,11 @@
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Rust/Tauri build artifacts
+src-tauri/target/
+
+# Tauri generated files
+src-tauri/gen/

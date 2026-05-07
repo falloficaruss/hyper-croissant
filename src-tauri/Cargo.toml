@@ -5,6 +5,7 @@ edition = "2021"
 
 [lib]
 name = "hyper_croissant_lib"
+path = "src/lib.rs"
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
@@ -16,7 +17,7 @@ tauri-plugin-shell = "2.0.0"
 tokio = { version = "1.35", features = ["full"] }
 
 # Chess logic
-shakmaty = "0.26"
+shakmaty = "0.27.3"
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -31,11 +32,10 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 
 # UCI/Movelist parsing
-shakmaty-uci = "0.25"
+shakmaty-uci = "0.1.1"
 
-[dependencies.tauri-build]
-version = "2.0.0"
-
+[build-dependencies]
+tauri-build = "2.0.0"
 
 [features]
 default = []

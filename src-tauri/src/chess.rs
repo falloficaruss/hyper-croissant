@@ -1,5 +1,5 @@
-use shakmaty::{Chess, Position, Square, Move, Role, san::San, fen::Fen};
-use shakmaty::uci::Uci;
+use shakmaty::{CastlingMode, Chess, Move, Position, Role, fen::Fen, san::San};
+use shakmaty::uci::UciMove;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -28,7 +28,7 @@ pub fn parse_fen(fen: &str) -> Result<Chess, String> {
     let fen = fen.parse::<Fen>()
         .map_err(|e| format!("Invalid FEN: {}", e))?;
 
-    let pos: Chess = fen.into_position()
+    let pos: Chess = fen.into_position(CastlingMode::Standard)
         .map_err(|e| format!("Invalid position: {:?}", e))?;
 
     Ok(pos)
@@ -42,9 +42,9 @@ pub fn get_legal_moves(pos: &Chess) -> Vec<MoveData> {
         let san = San::from_move(pos, &move_).to_string();
 
         moves.push(MoveData {
-            uci: Uci::from_move(pos, &move_).to_string(),
+            uci: UciMove::from_move(&move_, CastlingMode::Standard).to_string(),
             san,
-            from_index: usize::from(move_.from() ),
+            from_index: usize::from(move_.from().expect("legal move has from-square")),
             to_index: usize::from(move_.to() ),
             piece: piece_char(&move_),
             is_capture: move_.capture().is_some(),
@@ -57,7 +57,7 @@ pub fn get_legal_moves(pos: &Chess) -> Vec<MoveData> {
 }
 
 pub fn make_move(pos: &Chess, uci_str: &str) -> Result<Chess, String> {
-    let uci = Uci::from_ascii(uci_str.as_bytes())
+    let uci = UciMove::from_ascii(uci_str.as_bytes())
         .map_err(|e| format!("Invalid UCI: {}", e))?;
 
     let move_ = uci.to_move(pos)
