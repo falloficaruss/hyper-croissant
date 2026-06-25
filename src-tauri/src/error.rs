@@ -15,6 +15,8 @@ pub enum HyperCroissantError {
     InvalidFen(String),
     #[error("Invalid move: {0}")]
     InvalidMove(String),
+    #[error("Invalid PGN: {0}")]
+    InvalidPgn(String),
     #[error("IO error: {0}")]
     IoError(String),
     #[error("Channel closed")]

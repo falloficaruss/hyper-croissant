@@ -1,7 +1,7 @@
-use tauri::{AppHandle, State};
-use crate::engine::{EngineManager, EngineConfig, EngineCommand};
+use crate::chess::{self, MoveData, MoveResult, PositionData};
+use crate::engine::{EngineCommand, EngineConfig, EngineManager};
 use crate::error::HyperCroissantError;
-use crate::chess::{self, MoveData, PositionData};
+use tauri::{AppHandle, State};
 
 #[tauri::command]
 pub async fn start_engine(
@@ -24,8 +24,17 @@ pub async fn go_position(
     depth: Option<u32>,
     manager: State<'_, EngineManager>,
 ) -> Result<(), HyperCroissantError> {
-    manager.send_command(EngineCommand::Position { fen, moves }).await?;
-    manager.send_command(EngineCommand::Go { depth, movetime: None, infinite: true }).await
+    manager
+        .send_command(EngineCommand::Position { fen, moves })
+        .await?;
+    let infinite = depth.is_none();
+    manager
+        .send_command(EngineCommand::Go {
+            depth,
+            movetime: None,
+            infinite,
+        })
+        .await
 }
 
 #[tauri::command]
@@ -42,4 +51,26 @@ pub async fn get_legal_moves(fen: String) -> Result<Vec<MoveData>, HyperCroissan
 #[tauri::command]
 pub async fn validate_position(fen: String) -> Result<PositionData, HyperCroissantError> {
     chess::get_position_data(&fen).map_err(HyperCroissantError::InvalidFen)
+}
+
+#[tauri::command]
+pub async fn make_move_command(
+    fen: String,
+    uci_move: String,
+) -> Result<MoveResult, HyperCroissantError> {
+    let pos = chess::parse_fen(&fen).map_err(HyperCroissantError::InvalidFen)?;
+    chess::make_move_with_data(&pos, &uci_move).map_err(HyperCroissantError::InvalidMove)
+}
+
+#[tauri::command]
+pub async fn make_moves_command(
+    fen: String,
+    uci_moves: Vec<String>,
+) -> Result<MoveResult, HyperCroissantError> {
+    chess::make_moves_sequence(&fen, &uci_moves).map_err(HyperCroissantError::InvalidMove)
+}
+
+#[tauri::command]
+pub async fn get_game_from_pgn(pgn: String) -> Result<chess::GameData, HyperCroissantError> {
+    chess::pgn_to_game(&pgn).map_err(HyperCroissantError::InvalidPgn)
 }
