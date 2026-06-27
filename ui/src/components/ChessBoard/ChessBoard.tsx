@@ -1,6 +1,7 @@
 import { Chessboard } from "react-chessboard";
 import type { PieceDropHandlerArgs } from "react-chessboard";
 import { useGameStore } from "../../stores/gameStore";
+import { useEngineStore } from "../../stores/engineStore";
 
 export function ChessBoard() {
   const fen = useGameStore((s) => s.fen);
@@ -8,6 +9,7 @@ export function ChessBoard() {
   const lastMove = useGameStore((s) => s.lastMove);
   const isCheck = useGameStore((s) => s.isCheck);
   const makeMove = useGameStore((s) => s.makeMove);
+  const bestMove = useEngineStore((s) => s.bestMove);
 
   function onDrop({ piece, sourceSquare, targetSquare }: PieceDropHandlerArgs) {
     if (!targetSquare) return false;
@@ -20,9 +22,17 @@ export function ChessBoard() {
     return true;
   }
 
-  const arrows = lastMove
-    ? [{ startSquare: lastMove.from, endSquare: lastMove.to, color: "#fff" }]
-    : [];
+  const arrows = [];
+  if (lastMove) {
+    arrows.push({ startSquare: lastMove.from, endSquare: lastMove.to, color: "#fff" });
+  }
+  if (bestMove && bestMove.length >= 4) {
+    arrows.push({
+      startSquare: bestMove.slice(0, 2),
+      endSquare: bestMove.slice(2, 4),
+      color: "#8b5cf6",
+    });
+  }
 
   return (
     <div className="board-container">

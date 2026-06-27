@@ -24,6 +24,7 @@ pub fn run() {
             commands::make_move_command,
             commands::make_moves_command,
             commands::get_game_from_pgn,
+            commands::set_engine_option,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Hyper-Croissant");

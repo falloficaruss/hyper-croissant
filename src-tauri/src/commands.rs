@@ -74,3 +74,14 @@ pub async fn make_moves_command(
 pub async fn get_game_from_pgn(pgn: String) -> Result<chess::GameData, HyperCroissantError> {
     chess::pgn_to_game(&pgn).map_err(HyperCroissantError::InvalidPgn)
 }
+
+#[tauri::command]
+pub async fn set_engine_option(
+    name: String,
+    value: String,
+    manager: State<'_, EngineManager>,
+) -> Result<(), HyperCroissantError> {
+    manager
+        .send_command(EngineCommand::SetOption { name, value })
+        .await
+}

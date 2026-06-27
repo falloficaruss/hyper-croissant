@@ -21,6 +21,14 @@ pub enum EngineCommand {
     Go { depth: Option<u32>, movetime: Option<u32>, infinite: bool },
     Stop,
     Quit,
+    SetOption { name: String, value: String },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Score {
+    Cp(i32),
+    Mate(i32),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,7 +42,7 @@ pub enum EngineOutput {
         depth: Option<u32>,
         seldepth: Option<u32>,
         multipv: Option<u32>,
-        score: Option<String>,
+        score: Option<Score>,
         nodes: Option<u64>,
         nps: Option<u64>,
         hashfull: Option<u32>,
@@ -121,6 +129,7 @@ impl UciEngine {
             }
             EngineCommand::Stop => "stop".to_string(),
             EngineCommand::Quit => "quit".to_string(),
+            EngineCommand::SetOption { name, value } => format!("setoption name {} value {}", name, value),
         };
 
         self.tx.send(cmd_str).map_err(|_| HyperCroissantError::ChannelClosed)
@@ -171,7 +180,15 @@ fn parse_uci_line(line: &str) -> Option<EngineOutput> {
                         "tbhits" if i + 1 < parts.len() => { *tbhits = parts[i+1].parse().ok(); i += 2; }
                         "time" if i + 1 < parts.len() => { *time = parts[i+1].parse().ok(); i += 2; }
                         "score" if i + 2 < parts.len() => {
-                            *score = Some(format!("{} {}", parts[i+1], parts[i+2]));
+                            let raw_type = parts[i+1];
+                            let raw_val = parts[i+2];
+                            *score = raw_val.parse::<i32>().ok().map(|v| {
+                                if raw_type == "cp" {
+                                    Score::Cp(v)
+                                } else {
+                                    Score::Mate(v)
+                                }
+                            });
                             i += 3;
                         }
                         "pv" => {
