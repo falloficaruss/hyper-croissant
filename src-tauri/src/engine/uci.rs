@@ -4,7 +4,7 @@ use tokio::process::{Child, Command};
 use tokio::sync::mpsc;
 use serde::{Deserialize, Serialize};
 use crate::error::HyperCroissantError;
-use tracing::{info, error, debug};
+use tracing::{error, debug};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EngineConfig {

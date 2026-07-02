@@ -1,9 +1,9 @@
 use std::sync::Arc;
-use tokio::sync::{Mutex, mpsc};
+use tokio::sync::Mutex;
 use tauri::{AppHandle, Emitter};
 use crate::error::HyperCroissantError;
-use crate::engine::uci::{UciEngine, EngineCommand, EngineOutput, EngineConfig};
-use tracing::{info, error};
+use crate::engine::uci::{UciEngine, EngineCommand, EngineConfig};
+use tracing::error;
 
 pub struct EngineManager {
     engine: Arc<Mutex<Option<UciEngine>>>,

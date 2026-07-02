@@ -85,3 +85,59 @@ pub async fn set_engine_option(
         .send_command(EngineCommand::SetOption { name, value })
         .await
 }
+
+use std::sync::Mutex as StdMutex;
+use crate::analysis::{self, EngineLineInfo, StructuredAnalysis, MoveComparison, ScoreData, PositionCache};
+
+#[tauri::command]
+pub async fn analyze_position_command(
+    fen: String,
+    engine_lines: Vec<EngineLineInfo>,
+    cache: State<'_, StdMutex<PositionCache>>,
+) -> Result<StructuredAnalysis, HyperCroissantError> {
+    let pos = chess::parse_fen(&fen).map_err(HyperCroissantError::InvalidFen)?;
+
+    // Check cache
+    let norm_fen = PositionCache::normalize_fen(&fen);
+    {
+        let cached = cache.lock().unwrap();
+        if let Some(entry) = cached.get(&norm_fen) {
+            return Ok(StructuredAnalysis {
+                fen: norm_fen,
+                features: entry.features.clone(),
+                concepts: entry.concepts.clone(),
+                tactics: entry.tactics.clone(),
+                engine_lines,
+            });
+        }
+    }
+
+    // Compute analysis
+    let result = analysis::analyze_position(&pos, &engine_lines);
+
+    // Cache
+    let mut cached = cache.lock().unwrap();
+    cached.insert(
+        norm_fen,
+        analysis::CachedAnalysis {
+            features: result.features.clone(),
+            concepts: result.concepts.clone(),
+            tactics: result.tactics.clone(),
+        },
+    );
+
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn compare_moves_command(
+    fen: String,
+    user_move: String,
+    engine_move: String,
+    user_score: Option<ScoreData>,
+    engine_score: Option<ScoreData>,
+) -> Result<MoveComparison, HyperCroissantError> {
+    let pos = chess::parse_fen(&fen).map_err(HyperCroissantError::InvalidFen)?;
+    analysis::compare_moves(&pos, &user_move, &engine_move, user_score, engine_score)
+        .map_err(|e| HyperCroissantError::InvalidMove(e))
+}

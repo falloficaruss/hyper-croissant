@@ -1,7 +1,10 @@
+pub mod analysis;
 pub mod chess;
 pub mod commands;
 pub mod engine;
 pub mod error;
+
+use std::sync::Mutex;
 
 use tracing::info;
 
@@ -14,6 +17,7 @@ pub fn run() {
     tauri::Builder::new()
         .plugin(tauri_plugin_shell::init())
         .manage(engine::EngineManager::new())
+        .manage(Mutex::new(analysis::PositionCache::new(1024)))
         .invoke_handler(tauri::generate_handler![
             commands::start_engine,
             commands::stop_engine,
@@ -25,6 +29,8 @@ pub fn run() {
             commands::make_moves_command,
             commands::get_game_from_pgn,
             commands::set_engine_option,
+            commands::analyze_position_command,
+            commands::compare_moves_command,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Hyper-Croissant");

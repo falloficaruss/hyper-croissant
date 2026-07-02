@@ -21,6 +21,8 @@ pub enum HyperCroissantError {
     IoError(String),
     #[error("Channel closed")]
     ChannelClosed,
+    #[error("Analysis error: {0}")]
+    AnalysisError(String),
 }
 
 impl From<std::io::Error> for HyperCroissantError {
