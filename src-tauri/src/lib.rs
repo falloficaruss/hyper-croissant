@@ -31,6 +31,7 @@ pub fn run() {
             commands::set_engine_option,
             commands::analyze_position_command,
             commands::compare_moves_command,
+            commands::get_cached_analysis,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Hyper-Croissant");

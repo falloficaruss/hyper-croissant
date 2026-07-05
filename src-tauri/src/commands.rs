@@ -87,7 +87,7 @@ pub async fn set_engine_option(
 }
 
 use std::sync::Mutex as StdMutex;
-use crate::analysis::{self, EngineLineInfo, StructuredAnalysis, MoveComparison, ScoreData, PositionCache};
+use crate::analysis::{self, CachedAnalysis, EngineLineInfo, StructuredAnalysis, MoveComparison, ScoreData, PositionCache};
 
 #[tauri::command]
 pub async fn analyze_position_command(
@@ -140,4 +140,14 @@ pub async fn compare_moves_command(
     let pos = chess::parse_fen(&fen).map_err(HyperCroissantError::InvalidFen)?;
     analysis::compare_moves(&pos, &user_move, &engine_move, user_score, engine_score)
         .map_err(|e| HyperCroissantError::InvalidMove(e))
+}
+
+#[tauri::command]
+pub async fn get_cached_analysis(
+    fen: String,
+    cache: State<'_, StdMutex<PositionCache>>,
+) -> Result<Option<CachedAnalysis>, HyperCroissantError> {
+    let norm_fen = PositionCache::normalize_fen(&fen);
+    let cached = cache.lock().unwrap();
+    Ok(cached.get(&norm_fen).cloned())
 }
