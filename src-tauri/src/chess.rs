@@ -2,8 +2,9 @@ use std::ops::ControlFlow;
 
 use pgn_reader::{RawTag, SanPlus, Skip, Visitor};
 use serde::{Deserialize, Serialize};
+pub use shakmaty::Chess;
 use shakmaty::uci::UciMove;
-use shakmaty::{fen::Fen, san::San, CastlingMode, Chess, EnPassantMode, Move, Position, Role};
+use shakmaty::{fen::Fen, san::San, CastlingMode, EnPassantMode, Move, Position, Role};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MoveData {
