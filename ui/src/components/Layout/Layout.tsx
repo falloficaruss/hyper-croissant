@@ -5,6 +5,7 @@ import { PGNInput } from "../PGNInput/PGNInput";
 import { EvalBar } from "../Board/EvalBar";
 import { AnalysisPanel } from "../Analysis/AnalysisPanel";
 import { EngineControls } from "../Analysis/EngineControls";
+import { ExplanationPanel } from "../LLM/ExplanationPanel";
 import { useGameStore } from "../../stores/gameStore";
 import "./Layout.css";
 
@@ -38,6 +39,9 @@ export function Layout() {
           </div>
           <div className="sidebar-section analysis-section">
             <AnalysisPanel />
+          </div>
+          <div className="sidebar-section analysis-section">
+            <ExplanationPanel />
           </div>
           <div className="sidebar-section move-list-section">
             <h2 className="sidebar-heading">Moves</h2>

@@ -1,0 +1,365 @@
+/* ── Explanation Panel ── */
+
+.explanation-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-size: 13px;
+}
+
+.explanation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.explanation-title {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.explanation-settings-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.explanation-settings-btn:hover {
+  color: var(--text-h);
+  border-color: var(--accent);
+}
+
+/* ── Explanation Level ── */
+
+.explanation-level {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.explanation-level-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.explanation-level-options {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+}
+
+.explanation-level-btn {
+  flex: 1;
+  font-size: 11px;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--sans);
+  font-weight: 500;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.explanation-level-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.explanation-level-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ── Conversation ── */
+
+.explanation-conversation {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0;
+  margin-bottom: 8px;
+}
+
+.explanation-conversation::-webkit-scrollbar {
+  width: 6px;
+}
+
+.explanation-conversation::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.explanation-conversation::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.explanation-empty {
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 12px;
+  text-align: center;
+  padding: 16px 8px;
+}
+
+.explanation-message {
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.explanation-user {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  align-self: flex-end;
+  margin-left: 20px;
+}
+
+.explanation-assistant {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  align-self: flex-start;
+  margin-right: 20px;
+}
+
+.explanation-message-role {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.explanation-message-content {
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.explanation-cursor {
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.explanation-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  color: #e74c3c;
+  font-size: 12px;
+}
+
+.explanation-error-icon {
+  flex-shrink: 0;
+}
+
+/* ── Actions ── */
+
+.explanation-actions {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.explanation-copy-btn {
+  font-size: 11px;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--sans);
+  transition: all 0.15s;
+}
+
+.explanation-copy-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-h);
+}
+
+/* ── Input ── */
+
+.explanation-input-area {
+  display: flex;
+  gap: 6px;
+}
+
+.explanation-input {
+  flex: 1;
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text);
+  font-family: var(--sans);
+}
+
+.explanation-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.explanation-input:disabled {
+  opacity: 0.5;
+}
+
+.explanation-send-btn,
+.explanation-stop-btn {
+  font-size: 13px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 500;
+  font-family: var(--sans);
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.explanation-send-btn {
+  background: var(--accent);
+}
+
+.explanation-send-btn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.explanation-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.explanation-stop-btn {
+  background: #e74c3c;
+}
+
+.explanation-stop-btn:hover {
+  opacity: 0.85;
+}
+
+/* ── LLM Settings Modal ── */
+
+.llm-settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.llm-settings {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.llm-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.llm-settings-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-h);
+}
+
+.llm-settings-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+  line-height: 1;
+}
+
+.llm-settings-close:hover {
+  color: var(--text-h);
+}
+
+.llm-settings-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.llm-settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.llm-settings-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+.llm-settings-optional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-secondary);
+}
+
+.llm-settings-input,
+.llm-settings-select {
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text);
+  font-family: var(--sans);
+}
+
+.llm-settings-input:focus,
+.llm-settings-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
