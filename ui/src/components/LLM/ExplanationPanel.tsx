@@ -99,17 +99,23 @@ export function ExplanationPanel({ systemPrompt = DEFAULT_SYSTEM_PROMPT }: Props
     setInput("");
 
     // Build the messages payload
-    let contentStr = `Explain this position. FEN: ${fen}\nExplanation Level: ${explanationLevel}\n`;
+    const structuredAnalysis: Record<string, any> = {
+      type: "explain_position",
+      fen,
+      explanation_level: explanationLevel,
+      user_question: userMessage.content,
+    };
+
     if (bestLine) {
-       contentStr += `Engine evaluation: ${formatScore(bestLine.score)}, Best line: ${bestLine.pv.join(" ")}\n`;
+      structuredAnalysis.engine_evaluation = formatScore(bestLine.score);
+      structuredAnalysis.best_line = bestLine.pv.join(" ");
     }
-    contentStr += `Question: ${userMessage.content}`;
 
     const messages = [
       { role: "system" as const, content: systemPrompt },
       {
         role: "user" as const,
-        content: contentStr,
+        content: JSON.stringify(structuredAnalysis),
       },
     ];
 
