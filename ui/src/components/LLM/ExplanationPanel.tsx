@@ -160,7 +160,7 @@ export function ExplanationPanel({ systemPrompt = DEFAULT_SYSTEM_PROMPT }: Props
     } finally {
       setStreaming(false);
     }
-  }, [fen, input, explanationLevel, getLLMConfig, systemPrompt, setSettingsOpen]);
+  }, [fen, input, explanationLevel, getLLMConfig, systemPrompt, setSettingsOpen, bestLine]);
 
   const handleStop = useCallback(() => {
     abortRef.current?.abort();
