@@ -4,6 +4,7 @@ import { useSettingsStore } from "../../stores/settingsStore";
 import { useGameStore } from "../../stores/gameStore";
 import { useEngineStore } from "../../stores/engineStore";
 import { getProviderOrThrow } from "../../lib/llm";
+import { formatScore } from "../../types/engine";
 import { ExplanationLevel } from "./ExplanationLevel";
 import { LLMSettings } from "./LLMSettings";
 import type { ConversationEntry } from "../../types/llm";
@@ -100,7 +101,7 @@ export function ExplanationPanel({ systemPrompt = DEFAULT_SYSTEM_PROMPT }: Props
     // Build the messages payload
     let contentStr = `Explain this position. FEN: ${fen}\nExplanation Level: ${explanationLevel}\n`;
     if (bestLine) {
-       contentStr += `Engine evaluation: ${bestLine.score}, Best line: ${bestLine.pv.join(" ")}\n`;
+       contentStr += `Engine evaluation: ${formatScore(bestLine.score)}, Best line: ${bestLine.pv.join(" ")}\n`;
     }
     contentStr += `Question: ${userMessage.content}`;
 
