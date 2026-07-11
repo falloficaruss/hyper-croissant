@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import "./LLM.css";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { useGameStore } from "../../stores/gameStore";
+import { useEngineStore } from "../../stores/engineStore";
 import { getProviderOrThrow } from "../../lib/llm";
 import { ExplanationLevel } from "./ExplanationLevel";
 import { LLMSettings } from "./LLMSettings";
@@ -39,6 +40,8 @@ export function ExplanationPanel({ systemPrompt = DEFAULT_SYSTEM_PROMPT }: Props
   const settingsOpen = useSettingsStore((s) => s.settingsOpen);
 
   const fen = useGameStore((s) => s.fen);
+  const engineLines = useEngineStore((s) => s.analysisLines);
+  const bestLine = engineLines.length > 0 ? engineLines[0] : null;
 
   const [conversation, setConversation] = useState<ConversationEntry[]>([]);
   const [input, setInput] = useState("");
@@ -95,16 +98,17 @@ export function ExplanationPanel({ systemPrompt = DEFAULT_SYSTEM_PROMPT }: Props
     setInput("");
 
     // Build the messages payload
+    let contentStr = `Explain this position. FEN: ${fen}\nExplanation Level: ${explanationLevel}\n`;
+    if (bestLine) {
+       contentStr += `Engine evaluation: ${bestLine.score}, Best line: ${bestLine.pv.join(" ")}\n`;
+    }
+    contentStr += `Question: ${userMessage.content}`;
+
     const messages = [
       { role: "system" as const, content: systemPrompt },
       {
         role: "user" as const,
-        content: JSON.stringify({
-          type: "explain_position",
-          fen,
-          explanation_level: explanationLevel,
-          user_question: userMessage.content,
-        }),
+        content: contentStr,
       },
     ];
 

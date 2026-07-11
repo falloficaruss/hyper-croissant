@@ -3,6 +3,7 @@ pub mod chess;
 pub mod commands;
 pub mod engine;
 pub mod error;
+pub mod llm;
 
 use std::sync::Mutex;
 
@@ -32,6 +33,7 @@ pub fn run() {
             commands::analyze_position_command,
             commands::compare_moves_command,
             commands::get_cached_analysis,
+            llm::explain_move,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Hyper-Croissant");
