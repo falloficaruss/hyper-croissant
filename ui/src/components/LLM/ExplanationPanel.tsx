@@ -2,10 +2,13 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import "./LLM.css";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { useGameStore } from "../../stores/gameStore";
+import { useEngineStore } from "../../stores/engineStore";
 import { getProviderOrThrow } from "../../lib/llm";
+import { analyzePosition } from "../../lib/tauri";
 import { ExplanationLevel } from "./ExplanationLevel";
 import { LLMSettings } from "./LLMSettings";
 import type { ConversationEntry } from "../../types/llm";
+import type { EngineLineInfo, StructuredAnalysis } from "../../types/analysis";
 
 interface Props {
   systemPrompt?: string;
@@ -39,10 +42,13 @@ export function ExplanationPanel({ systemPrompt = DEFAULT_SYSTEM_PROMPT }: Props
   const settingsOpen = useSettingsStore((s) => s.settingsOpen);
 
   const fen = useGameStore((s) => s.fen);
+  const engineLines = useEngineStore((s) => s.analysisLines);
+  const bestLine = engineLines.length > 0 ? engineLines[0] : null;
 
   const [conversation, setConversation] = useState<ConversationEntry[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -81,31 +87,97 @@ export function ExplanationPanel({ systemPrompt = DEFAULT_SYSTEM_PROMPT }: Props
     abortRef.current?.abort();
     abortRef.current = new AbortController();
 
+    const question = input || "Explain this position for a club-level player.";
     setStreaming(true);
     setError(null);
+    setInput("");
 
     const userMessage: ConversationEntry = {
       id: generateId(),
       role: "user",
-      content: input || "Explain this position for a club-level player.",
+      content: question,
       timestamp: Date.now(),
     };
 
     setConversation((prev) => [...prev, userMessage]);
-    setInput("");
 
-    // Build the messages payload
-    const messages = [
-      { role: "system" as const, content: systemPrompt },
-      {
-        role: "user" as const,
-        content: JSON.stringify({
+    // Call the intelligence layer
+    setAnalyzing(true);
+    let analysis: StructuredAnalysis | null = null;
+    try {
+      const analysisInput: EngineLineInfo[] = engineLines.map((l) => ({
+        depth: l.depth,
+        score:
+          l.score.type === "Cp"
+            ? { kind: "cp", value: l.score.value }
+            : { kind: "mate", value: l.score.value },
+        pv: l.pv,
+        multipv: l.multipv,
+      }));
+      analysis = await analyzePosition(fen, analysisInput);
+    } catch {
+      // Intelligence layer failed; fall back to simple prompt
+    }
+    setAnalyzing(false);
+
+    // Build the prompt
+    const best = bestLine;
+    const promptJson = (() => {
+      if (!analysis) {
+        const fallback: Record<string, unknown> = {
           type: "explain_position",
           fen,
           explanation_level: explanationLevel,
-          user_question: userMessage.content,
-        }),
-      },
+          user_question: question,
+        };
+        if (best) {
+          fallback.best_move = best.pv[0] ?? "";
+          fallback.evaluation =
+            best.score.type === "Cp"
+              ? `${(best.score.value / 100).toFixed(2)}`
+              : `mate in ${best.score.value}`;
+          fallback.best_line = best.pv.join(" ");
+        }
+        return JSON.stringify(fallback);
+      }
+
+      const lines = analysis.engine_lines;
+      const bestMove = lines.length > 0 ? lines[0].pv[0] ?? "" : "";
+      const evalStr =
+        lines.length > 0
+          ? lines[0].score.kind === "cp"
+            ? `${(lines[0].score.value / 100).toFixed(2)}`
+            : `mate in ${lines[0].score.value}`
+          : "";
+      const diffToSecond =
+        lines.length >= 2 &&
+        lines[0].score.kind === "cp" &&
+        lines[1].score.kind === "cp"
+          ? Math.abs(lines[0].score.value - lines[1].score.value) / 100
+          : 0;
+
+      return JSON.stringify({
+        type: "explain_position",
+        fen: analysis.fen,
+        best_move: bestMove,
+        evaluation: evalStr,
+        difference_to_second: diffToSecond,
+        concepts: {
+          initiative: analysis.concepts.initiative,
+          tempo_advantage: analysis.concepts.tempo_advantage,
+          key_ideas: analysis.concepts.key_ideas,
+          plan: analysis.concepts.plan,
+          strategic_summary: analysis.concepts.strategic_summary,
+        },
+        tactics: analysis.tactics.map((t) => t.description),
+        explanation_level: explanationLevel,
+        user_question: question,
+      });
+    })();
+
+    const messages = [
+      { role: "system" as const, content: systemPrompt },
+      { role: "user" as const, content: promptJson },
     ];
 
     const assistantEntry: ConversationEntry = {
@@ -155,7 +227,7 @@ export function ExplanationPanel({ systemPrompt = DEFAULT_SYSTEM_PROMPT }: Props
     } finally {
       setStreaming(false);
     }
-  }, [fen, input, explanationLevel, getLLMConfig, systemPrompt, setSettingsOpen]);
+  }, [fen, input, explanationLevel, getLLMConfig, systemPrompt, setSettingsOpen, bestLine, engineLines]);
 
   const handleStop = useCallback(() => {
     abortRef.current?.abort();
@@ -172,7 +244,7 @@ export function ExplanationPanel({ systemPrompt = DEFAULT_SYSTEM_PROMPT }: Props
   }, [conversation]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey && !streaming) {
+    if (e.key === "Enter" && !e.shiftKey && !streaming && !analyzing) {
       e.preventDefault();
       handleExplainPosition();
     }
@@ -201,9 +273,15 @@ export function ExplanationPanel({ systemPrompt = DEFAULT_SYSTEM_PROMPT }: Props
 
       {/* Conversation */}
       <div className="explanation-conversation">
-        {conversation.length === 0 && !error && (
+        {conversation.length === 0 && !error && !analyzing && (
           <div className="explanation-empty">
             Ask a question about this position to get an AI-powered explanation.
+          </div>
+        )}
+
+        {analyzing && conversation.length === 0 && (
+          <div className="explanation-empty">
+            Analyzing position...
           </div>
         )}
 
@@ -255,7 +333,7 @@ export function ExplanationPanel({ systemPrompt = DEFAULT_SYSTEM_PROMPT }: Props
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Ask about this position..."
-          disabled={streaming}
+          disabled={streaming || analyzing}
         />
         {streaming ? (
           <button
@@ -269,7 +347,7 @@ export function ExplanationPanel({ systemPrompt = DEFAULT_SYSTEM_PROMPT }: Props
           <button
             className="explanation-send-btn"
             onClick={handleExplainPosition}
-            disabled={streaming}
+            disabled={streaming || analyzing}
             type="button"
           >
             Ask
