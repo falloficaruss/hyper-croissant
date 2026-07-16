@@ -1,13 +1,16 @@
 use std::collections::HashMap;
 
-use crate::analysis::types::CachedAnalysis;
+use crate::analysis::types::{CachedAnalysis, EvalSwing};
 use crate::chess;
 
 /// In-memory cache for analyzed positions, keyed by normalized FEN.
+/// Also caches eval swings by (fen_before, move).
 pub struct PositionCache {
     inner: HashMap<String, CachedAnalysis>,
     max_entries: usize,
     insertion_order: Vec<String>,
+    swing_inner: HashMap<String, EvalSwing>,
+    swing_order: Vec<String>,
 }
 
 impl PositionCache {
@@ -16,6 +19,8 @@ impl PositionCache {
             inner: HashMap::new(),
             max_entries,
             insertion_order: Vec::new(),
+            swing_inner: HashMap::new(),
+            swing_order: Vec::new(),
         }
     }
 
@@ -34,6 +39,25 @@ impl PositionCache {
         self.inner.insert(norm, analysis);
     }
 
+    pub fn swing_key(fen_before: &str, user_move: &str) -> String {
+        format!("{}|{}", Self::normalize_fen(fen_before), user_move)
+    }
+
+    pub fn get_swing(&self, fen_before: &str, user_move: &str) -> Option<&EvalSwing> {
+        let key = Self::swing_key(fen_before, user_move);
+        self.swing_inner.get(&key)
+    }
+
+    pub fn insert_swing(&mut self, swing: EvalSwing) {
+        let key = Self::swing_key(&swing.fen_before, &swing.user_move);
+        if self.swing_inner.contains_key(&key) {
+            return;
+        }
+        self.evict_swing_if_needed();
+        self.swing_order.push(key.clone());
+        self.swing_inner.insert(key, swing);
+    }
+
     pub fn normalize_fen(fen: &str) -> String {
         match chess::parse_fen(fen) {
             Ok(pos) => chess::pos_to_fen(&pos),
@@ -46,6 +70,17 @@ impl PositionCache {
             if let Some(oldest) = self.insertion_order.first().cloned() {
                 self.inner.remove(&oldest);
                 self.insertion_order.retain(|k| *k != oldest);
+            } else {
+                break;
+            }
+        }
+    }
+
+    fn evict_swing_if_needed(&mut self) {
+        while self.swing_inner.len() >= self.max_entries {
+            if let Some(oldest) = self.swing_order.first().cloned() {
+                self.swing_inner.remove(&oldest);
+                self.swing_order.retain(|k| *k != oldest);
             } else {
                 break;
             }

@@ -105,6 +105,31 @@ pub fn build_comparison_prompt(
     })
 }
 
+/// Build a structured JSON prompt for explaining an evaluation swing.
+pub fn build_swing_prompt(
+    swing: &EvalSwing,
+    level: &ExplanationLevel,
+    user_question: Option<&str>,
+) -> Value {
+    json!({
+        "type": "explain_swing",
+        "explanation_level": level.as_str(),
+        "user_question": user_question.unwrap_or("Why did the evaluation change after this move?"),
+        "eval_swing": {
+            "user_move": swing.user_move,
+            "user_move_san": swing.user_move_san,
+            "eval_before": swing.eval_before.as_ref().map(format_score_data),
+            "eval_after": swing.eval_after.as_ref().map(format_score_data),
+            "swing_pawns": swing.swing_pawns,
+            "swing_cp": swing.swing_cp,
+            "severity": swing.severity,
+            "consequences": swing.consequences,
+            "tactical_motifs": swing.tactical_motifs,
+            "summary": swing.summary,
+        },
+    })
+}
+
 fn format_score_data(score: &ScoreData) -> String {
     if score.kind == "cp" {
         let val = score.value as f64 / 100.0;
@@ -191,5 +216,29 @@ mod tests {
         let json_str = serde_json::to_string(&prompt).unwrap();
         assert!(json_str.contains("compare_moves"));
         assert!(json_str.contains("g1f3"));
+    }
+
+    #[test]
+    fn test_build_swing_prompt() {
+        let swing = EvalSwing {
+            fen_before: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string(),
+            fen_after: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1".to_string(),
+            user_move: "e2e4".to_string(),
+            user_move_san: Some("e4".to_string()),
+            eval_before: Some(ScoreData { kind: "cp".to_string(), value: 20 }),
+            eval_after: Some(ScoreData { kind: "cp".to_string(), value: -180 }),
+            swing_cp: Some(-200),
+            swing_pawns: Some(-2.0),
+            consequences: vec!["f3 square became weak".to_string()],
+            tactical_motifs: vec![],
+            severity: SwingSeverity::Blunder,
+            summary: "You lost 2.0 pawns. Reason: f3 square became weak".to_string(),
+        };
+
+        let prompt = build_swing_prompt(&swing, &ExplanationLevel::Standard, None);
+        let json_str = serde_json::to_string(&prompt).unwrap();
+        assert!(json_str.contains("explain_swing"));
+        assert!(json_str.contains("e2e4"));
+        assert!(json_str.contains("consequences"));
     }
 }

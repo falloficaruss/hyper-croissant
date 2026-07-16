@@ -165,6 +165,25 @@ export interface MoveComparison {
   summary: string;
 }
 
+// ── Eval Swing ──
+
+export type SwingSeverity = "none" | "minor" | "significant" | "blunder";
+
+export interface EvalSwing {
+  fen_before: string;
+  fen_after: string;
+  user_move: string;
+  user_move_san: string | null;
+  eval_before: ScoreData | null;
+  eval_after: ScoreData | null;
+  swing_cp: number | null;
+  swing_pawns: number | null;
+  consequences: string[];
+  tactical_motifs: string[];
+  severity: SwingSeverity;
+  summary: string;
+}
+
 // ── Engine Lines ──
 
 export interface EngineLineInfo {

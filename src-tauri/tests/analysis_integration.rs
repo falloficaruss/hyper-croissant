@@ -279,3 +279,66 @@ fn test_initiative_detected() {
     assert!(white_initiative || black_initiative || result.concepts.initiative.is_none(),
         "initiative should be detected as white, black, or none");
 }
+
+// ── Eval Swing ──
+#[test]
+fn test_eval_swing_blunder() {
+    let pos = parse("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    let result = analysis::analyze_eval_swing(
+        &pos,
+        "f2f3",
+        Some(ScoreData { kind: "cp".to_string(), value: 20 }),
+        Some(ScoreData { kind: "cp".to_string(), value: -250 }),
+    )
+    .unwrap();
+    assert_eq!(result.user_move, "f2f3");
+    assert_eq!(result.user_move_san.as_deref(), Some("f3"));
+    assert_eq!(result.swing_cp, Some(-270));
+    assert!(matches!(
+        result.severity,
+        SwingSeverity::Blunder | SwingSeverity::Significant
+    ));
+    assert!(!result.summary.is_empty());
+}
+
+#[test]
+fn test_eval_swing_extracts_consequences() {
+    // f3 is a known weakening move — should produce feature consequences
+    let pos = parse("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    let result = analysis::analyze_eval_swing(
+        &pos,
+        "f2f3",
+        Some(ScoreData { kind: "cp".to_string(), value: 20 }),
+        Some(ScoreData { kind: "cp".to_string(), value: -80 }),
+    )
+    .unwrap();
+    // Either feature consequences or severity classification should fire
+    assert!(
+        !result.consequences.is_empty()
+            || !result.tactical_motifs.is_empty()
+            || !matches!(result.severity, SwingSeverity::None),
+        "weakening move f3 should produce consequences or non-none severity"
+    );
+}
+
+#[test]
+fn test_eval_swing_cache_key_stable() {
+    let pos = parse(ITALIAN_OPENING);
+    let a = analysis::analyze_eval_swing(
+        &pos,
+        "d2d4",
+        Some(ScoreData { kind: "cp".to_string(), value: 30 }),
+        Some(ScoreData { kind: "cp".to_string(), value: 40 }),
+    )
+    .unwrap();
+    let b = analysis::analyze_eval_swing(
+        &pos,
+        "d2d4",
+        Some(ScoreData { kind: "cp".to_string(), value: 30 }),
+        Some(ScoreData { kind: "cp".to_string(), value: 40 }),
+    )
+    .unwrap();
+    assert_eq!(a.fen_before, b.fen_before);
+    assert_eq!(a.user_move, b.user_move);
+    assert_eq!(a.swing_cp, b.swing_cp);
+}

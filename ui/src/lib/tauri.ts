@@ -1,6 +1,13 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { MoveData, MoveResult, PositionData, GameData } from "../types/chess";
-import type { StructuredAnalysis, MoveComparison, CachedAnalysis, EngineLineInfo, ScoreData } from "../types/analysis";
+import type {
+  StructuredAnalysis,
+  MoveComparison,
+  CachedAnalysis,
+  EngineLineInfo,
+  ScoreData,
+  EvalSwing,
+} from "../types/analysis";
 
 export const getLegalMoves = (fen: string) =>
   invoke<MoveData[]>("get_legal_moves", { fen });
@@ -54,3 +61,16 @@ export const compareMoves = (
 
 export const getCachedAnalysis = (fen: string) =>
   invoke<CachedAnalysis | null>("get_cached_analysis", { fen });
+
+export const analyzeEvalSwing = (
+  fenBefore: string,
+  userMove: string,
+  evalBefore?: ScoreData,
+  evalAfter?: ScoreData,
+) =>
+  invoke<EvalSwing>("analyze_eval_swing_command", {
+    fenBefore,
+    userMove,
+    evalBefore,
+    evalAfter,
+  });

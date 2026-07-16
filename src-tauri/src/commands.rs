@@ -87,7 +87,10 @@ pub async fn set_engine_option(
 }
 
 use std::sync::Mutex as StdMutex;
-use crate::analysis::{self, CachedAnalysis, EngineLineInfo, StructuredAnalysis, MoveComparison, ScoreData, PositionCache};
+use crate::analysis::{
+    self, CachedAnalysis, EngineLineInfo, EvalSwing, MoveComparison, PositionCache, ScoreData,
+    StructuredAnalysis,
+};
 
 #[tauri::command]
 pub async fn analyze_position_command(
@@ -150,4 +153,32 @@ pub async fn get_cached_analysis(
     let norm_fen = PositionCache::normalize_fen(&fen);
     let cached = cache.lock().unwrap();
     Ok(cached.get(&norm_fen).cloned())
+}
+
+#[tauri::command]
+pub async fn analyze_eval_swing_command(
+    fen_before: String,
+    user_move: String,
+    eval_before: Option<ScoreData>,
+    eval_after: Option<ScoreData>,
+    cache: State<'_, StdMutex<PositionCache>>,
+) -> Result<EvalSwing, HyperCroissantError> {
+    // Cache hit (scores are part of the result; recompute if scores differ)
+    {
+        let cached = cache.lock().unwrap();
+        if let Some(entry) = cached.get_swing(&fen_before, &user_move) {
+            let scores_match = entry.eval_before == eval_before && entry.eval_after == eval_after;
+            if scores_match {
+                return Ok(entry.clone());
+            }
+        }
+    }
+
+    let pos = chess::parse_fen(&fen_before).map_err(HyperCroissantError::InvalidFen)?;
+    let swing = analysis::analyze_eval_swing(&pos, &user_move, eval_before, eval_after)
+        .map_err(HyperCroissantError::InvalidMove)?;
+
+    let mut cached = cache.lock().unwrap();
+    cached.insert_swing(swing.clone());
+    Ok(swing)
 }

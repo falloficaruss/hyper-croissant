@@ -181,7 +181,7 @@ pub struct TacticalMotif {
 
 // ── Comparison ──
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ScoreData {
     pub kind: String,
     pub value: i32,
@@ -195,6 +195,35 @@ pub struct MoveComparison {
     pub engine_move_eval: Option<ScoreData>,
     pub concepts_lost: Vec<String>,
     pub tactical_impact: Vec<String>,
+    pub summary: String,
+}
+
+// ── Eval Swing ──
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SwingSeverity {
+    None,
+    Minor,
+    Significant,
+    Blunder,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EvalSwing {
+    pub fen_before: String,
+    pub fen_after: String,
+    pub user_move: String,
+    pub user_move_san: Option<String>,
+    pub eval_before: Option<ScoreData>,
+    pub eval_after: Option<ScoreData>,
+    /// Centipawn change from the mover's perspective (negative = worse).
+    pub swing_cp: Option<i32>,
+    /// Same as swing_cp but in pawns (e.g. -2.1).
+    pub swing_pawns: Option<f64>,
+    pub consequences: Vec<String>,
+    pub tactical_motifs: Vec<String>,
+    pub severity: SwingSeverity,
     pub summary: String,
 }
 

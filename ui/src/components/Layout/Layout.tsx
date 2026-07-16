@@ -5,12 +5,17 @@ import { PGNInput } from "../PGNInput/PGNInput";
 import { EvalBar } from "../Board/EvalBar";
 import { AnalysisPanel } from "../Analysis/AnalysisPanel";
 import { EngineControls } from "../Analysis/EngineControls";
+import { EvalSwingCard } from "../Analysis/EvalSwingCard";
 import { ExplanationPanel } from "../LLM/ExplanationPanel";
 import { useGameStore } from "../../stores/gameStore";
+import { useAnalysisStore } from "../../stores/analysisStore";
 import "./Layout.css";
 
 export function Layout() {
   const toggleFlip = useGameStore((s) => s.toggleFlip);
+  const hasSwing = useAnalysisStore(
+    (s) => s.currentSwing !== null || s.swingLoading || s.swingError !== null,
+  );
 
   return (
     <div className="app-layout">
@@ -37,6 +42,11 @@ export function Layout() {
           <div className="sidebar-section">
             <EngineControls />
           </div>
+          {hasSwing && (
+            <div className="sidebar-section">
+              <EvalSwingCard />
+            </div>
+          )}
           <div className="sidebar-section analysis-section">
             <AnalysisPanel />
           </div>
