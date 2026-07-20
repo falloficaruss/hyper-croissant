@@ -6,6 +6,7 @@ import { EvalBar } from "../Board/EvalBar";
 import { AnalysisPanel } from "../Analysis/AnalysisPanel";
 import { EngineControls } from "../Analysis/EngineControls";
 import { EvalSwingCard } from "../Analysis/EvalSwingCard";
+import { ComparisonCard } from "../Analysis/ComparisonCard";
 import { ExplanationPanel } from "../LLM/ExplanationPanel";
 import { useGameStore } from "../../stores/gameStore";
 import { useAnalysisStore } from "../../stores/analysisStore";
@@ -15,6 +16,12 @@ export function Layout() {
   const toggleFlip = useGameStore((s) => s.toggleFlip);
   const hasSwing = useAnalysisStore(
     (s) => s.currentSwing !== null || s.swingLoading || s.swingError !== null,
+  );
+  const hasComparison = useAnalysisStore(
+    (s) =>
+      s.currentComparison !== null ||
+      s.comparisonLoading ||
+      s.comparisonError !== null,
   );
 
   return (
@@ -45,6 +52,11 @@ export function Layout() {
           {hasSwing && (
             <div className="sidebar-section">
               <EvalSwingCard />
+            </div>
+          )}
+          {hasComparison && (
+            <div className="sidebar-section">
+              <ComparisonCard />
             </div>
           )}
           <div className="sidebar-section analysis-section">

@@ -189,12 +189,24 @@ pub struct ScoreData {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MoveComparison {
+    pub fen_before: String,
+    pub fen_after_user: String,
+    pub fen_after_engine: String,
     pub user_move: String,
     pub engine_move: String,
+    pub user_move_san: Option<String>,
+    pub engine_move_san: Option<String>,
     pub user_move_eval: Option<ScoreData>,
     pub engine_move_eval: Option<ScoreData>,
+    /// Engine eval − user eval in cp from the mover's perspective (positive = engine better).
+    pub eval_diff_cp: Option<i32>,
+    /// Same as eval_diff_cp in pawns.
+    pub eval_diff_pawns: Option<f64>,
     pub concepts_lost: Vec<String>,
+    pub concepts_gained: Vec<String>,
     pub tactical_impact: Vec<String>,
+    pub strategic_difference: Vec<String>,
+    pub why_engine: Vec<String>,
     pub summary: String,
 }
 

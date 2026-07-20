@@ -3,15 +3,16 @@ import { useEngineStore } from "../stores/engineStore";
 import { useGameStore } from "../stores/gameStore";
 import { useAnalysisStore } from "../stores/analysisStore";
 
-interface PendingSwing {
+interface PendingAnalysis {
   fenBefore: string;
   fenAfter: string;
   userMove: string;
+  engineMove: string | null;
 }
 
 /**
- * Tracks engine evaluations per FEN and triggers eval-swing analysis
- * when the user advances to a new position after a move.
+ * Tracks engine evaluations per FEN and triggers eval-swing + why-not
+ * comparison analysis when the user advances to a new position after a move.
  */
 export function useAnalysis() {
   const analysisLines = useEngineStore((s) => s.analysisLines);
@@ -20,89 +21,135 @@ export function useAnalysis() {
   const currentMoveIndex = useGameStore((s) => s.currentMoveIndex);
 
   const recordEval = useAnalysisStore((s) => s.recordEval);
+  const recordBestMove = useAnalysisStore((s) => s.recordBestMove);
   const analyzeSwing = useAnalysisStore((s) => s.analyzeSwing);
-  const clearSwing = useAnalysisStore((s) => s.clearSwing);
+  const analyzeComparison = useAnalysisStore((s) => s.analyzeComparison);
+  const clearAnalysisCards = useAnalysisStore((s) => s.clearAnalysisCards);
   const getEval = useAnalysisStore((s) => s.getEval);
+  const getBestMove = useAnalysisStore((s) => s.getBestMove);
   const afterEval = useAnalysisStore((s) => s.evalByFen[fen]);
 
   const prevFenRef = useRef<string | null>(null);
   const prevMoveIndexRef = useRef(currentMoveIndex);
-  const pendingRef = useRef<PendingSwing | null>(null);
+  const pendingRef = useRef<PendingAnalysis | null>(null);
 
-  // Record top engine line eval for the current FEN
+  // Record top engine line eval + best move for the current FEN
   useEffect(() => {
     const top = analysisLines.find((l) => l.multipv === 1) ?? analysisLines[0];
     if (!top?.score) return;
     recordEval(fen, top.score, top.depth);
-  }, [analysisLines, fen, recordEval]);
+    const bestUci = top.pv?.[0];
+    if (bestUci) {
+      recordBestMove(fen, bestUci, top.score, top.depth);
+    }
+  }, [analysisLines, fen, recordEval, recordBestMove]);
 
-  // When the position changes due to a move (index increased), try swing analysis
+  // When the position changes due to a move (index increased), run analyses
   useEffect(() => {
     const prevFen = prevFenRef.current;
     const prevIndex = prevMoveIndexRef.current;
     prevFenRef.current = fen;
     prevMoveIndexRef.current = currentMoveIndex;
 
-    // Navigating backward → clear swing card
+    // Navigating backward → clear cards
     if (currentMoveIndex < prevIndex) {
       pendingRef.current = null;
-      clearSwing();
+      clearAnalysisCards();
       return;
     }
 
     // No previous position or same FEN
     if (!prevFen || prevFen === fen) return;
 
-    // Only analyze single-step advances (playing a move or stepping forward one ply)
+    // Only analyze single-step advances
     if (currentMoveIndex !== prevIndex + 1) {
-      // Multi-step jump — clear and skip
       if (currentMoveIndex !== prevIndex) {
         pendingRef.current = null;
-        clearSwing();
+        clearAnalysisCards();
       }
       return;
     }
 
     if (currentMoveIndex < 0 || currentMoveIndex >= moves.length) {
       pendingRef.current = null;
-      clearSwing();
+      clearAnalysisCards();
       return;
     }
 
     const move = moves[currentMoveIndex];
     if (!move?.uci) {
       pendingRef.current = null;
-      clearSwing();
+      clearAnalysisCards();
       return;
     }
 
-    const pending: PendingSwing = {
+    const best = getBestMove(prevFen);
+    const pending: PendingAnalysis = {
       fenBefore: prevFen,
       fenAfter: fen,
       userMove: move.uci,
+      engineMove: best?.uci ?? null,
     };
     pendingRef.current = pending;
 
     const run = () => {
-      void analyzeSwing(pending);
+      void analyzeSwing({
+        fenBefore: pending.fenBefore,
+        fenAfter: pending.fenAfter,
+        userMove: pending.userMove,
+      });
+      // Prefer live best-move lookup in case it arrived after navigation
+      const engineMove = getBestMove(pending.fenBefore)?.uci ?? pending.engineMove;
+      if (engineMove && engineMove !== pending.userMove) {
+        void analyzeComparison({
+          fenBefore: pending.fenBefore,
+          fenAfter: pending.fenAfter,
+          userMove: pending.userMove,
+          engineMove,
+        });
+      } else {
+        // Clear stale comparison if user played the engine move
+        useAnalysisStore.getState().clearComparison();
+      }
     };
 
-    if (getEval(fen)) {
-      run();
-    } else {
-      // Analyze with before-score only; refresh when after-eval arrives
-      run();
+    run();
+    if (!getEval(fen) || !getBestMove(prevFen)) {
       const t = window.setTimeout(run, 1200);
       return () => window.clearTimeout(t);
     }
-  }, [fen, currentMoveIndex, moves, analyzeSwing, clearSwing, getEval]);
+  }, [
+    fen,
+    currentMoveIndex,
+    moves,
+    analyzeSwing,
+    analyzeComparison,
+    clearAnalysisCards,
+    getEval,
+    getBestMove,
+  ]);
 
-  // When after-eval updates for the current position, re-analyze pending swing
+  // When after-eval updates for the current position, re-analyze pending
   useEffect(() => {
     const pending = pendingRef.current;
     if (!pending) return;
     if (pending.fenAfter !== fen) return;
     if (!afterEval) return;
-    void analyzeSwing(pending);
-  }, [afterEval, fen, analyzeSwing]);
+
+    void analyzeSwing({
+      fenBefore: pending.fenBefore,
+      fenAfter: pending.fenAfter,
+      userMove: pending.userMove,
+    });
+
+    const engineMove = getBestMove(pending.fenBefore)?.uci ?? pending.engineMove;
+    if (engineMove && engineMove !== pending.userMove) {
+      void analyzeComparison({
+        fenBefore: pending.fenBefore,
+        fenAfter: pending.fenAfter,
+        userMove: pending.userMove,
+        engineMove,
+      });
+    }
+  }, [afterEval, fen, analyzeSwing, analyzeComparison, getBestMove]);
 }

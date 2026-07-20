@@ -2,6 +2,7 @@ pub mod types;
 mod feature_extractor;
 mod concepts;
 mod tactics;
+mod feature_diff;
 mod comparison;
 mod eval_swing;
 mod prompt_builder;
@@ -12,7 +13,7 @@ pub use types::*;
 pub use feature_extractor::extract_features;
 pub use concepts::evaluate_concepts;
 pub use tactics::detect_tactics;
-pub use comparison::compare_moves;
+pub use comparison::{compare_moves, is_significant_comparison, COMPARISON_THRESHOLD_CP};
 pub use eval_swing::{analyze_eval_swing, SWING_THRESHOLD_CP};
 pub use prompt_builder::{
     build_analysis_prompt, build_comparison_prompt, build_swing_prompt, ExplanationLevel,

@@ -159,7 +159,7 @@ fn test_opening_features() {
     assert!(!result.concepts.key_ideas.is_empty());
 }
 
-// ── Eval Swing via compare_moves ──
+// ── Why-not comparison ──
 #[test]
 fn test_compare_moves_blunder() {
     let pos = parse(ITALIAN_OPENING);
@@ -172,8 +172,20 @@ fn test_compare_moves_blunder() {
     ).unwrap();
     assert!(result.user_move == "f3e5");
     assert!(result.engine_move == "d2d4");
-    assert!(result.summary.contains("Eval swing") || !result.concepts_lost.is_empty(),
-        "blunder comparison should mention eval swing or lost concepts");
+    assert_eq!(result.user_move_san.as_deref(), Some("Nxe5"));
+    assert_eq!(result.engine_move_san.as_deref(), Some("d4"));
+    assert!(result.eval_diff_cp == Some(25));
+    assert!(!result.why_engine.is_empty());
+    assert!(
+        result.summary.contains("worse")
+            || result.summary.contains("Comparing")
+            || !result.concepts_lost.is_empty()
+            || !result.strategic_difference.is_empty()
+            || !result.tactical_impact.is_empty(),
+        "blunder comparison should mention eval gap or positional differences: {}",
+        result.summary
+    );
+    assert!(analysis::is_significant_comparison(&result));
 }
 
 // ── Legal's Mate (famous tactical pattern) ──
@@ -262,6 +274,10 @@ fn test_compare_moves_no_scores() {
     assert_eq!(result.user_move, "f3e5");
     assert_eq!(result.engine_move, "d2d4");
     assert!(!result.summary.is_empty());
+    assert!(!result.fen_before.is_empty());
+    assert!(!result.fen_after_user.is_empty());
+    assert!(!result.fen_after_engine.is_empty());
+    assert_eq!(result.eval_diff_cp, None);
 }
 
 // ── Concepts: Initiative detection ──

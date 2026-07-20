@@ -156,12 +156,23 @@ export interface ScoreData {
 }
 
 export interface MoveComparison {
+  fen_before: string;
+  fen_after_user: string;
+  fen_after_engine: string;
   user_move: string;
   engine_move: string;
+  user_move_san: string | null;
+  engine_move_san: string | null;
   user_move_eval: ScoreData | null;
   engine_move_eval: ScoreData | null;
+  /** Engine − user eval in cp from mover's perspective (positive = engine better). */
+  eval_diff_cp: number | null;
+  eval_diff_pawns: number | null;
   concepts_lost: string[];
+  concepts_gained: string[];
   tactical_impact: string[];
+  strategic_difference: string[];
+  why_engine: string[];
   summary: string;
 }
 

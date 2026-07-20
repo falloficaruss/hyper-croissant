@@ -96,10 +96,17 @@ pub fn build_comparison_prompt(
         "comparison": {
             "user_move": comparison.user_move,
             "engine_move": comparison.engine_move,
+            "user_move_san": comparison.user_move_san,
+            "engine_move_san": comparison.engine_move_san,
             "user_move_eval": comparison.user_move_eval.as_ref().map(format_score_data),
             "engine_move_eval": comparison.engine_move_eval.as_ref().map(format_score_data),
+            "eval_diff_cp": comparison.eval_diff_cp,
+            "eval_diff_pawns": comparison.eval_diff_pawns,
             "concepts_lost": comparison.concepts_lost,
+            "concepts_gained": comparison.concepts_gained,
             "tactical_impact": comparison.tactical_impact,
+            "strategic_difference": comparison.strategic_difference,
+            "why_engine": comparison.why_engine,
             "summary": comparison.summary,
         },
     })
@@ -203,19 +210,31 @@ mod tests {
     #[test]
     fn test_build_comparison_prompt() {
         let comparison = MoveComparison {
+            fen_before: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string(),
+            fen_after_user: "rnbqkb1r/pppppppp/5n2/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 1 1".to_string(),
+            fen_after_engine: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1".to_string(),
             user_move: "g1f3".to_string(),
             engine_move: "e2e4".to_string(),
+            user_move_san: Some("Nf3".to_string()),
+            engine_move_san: Some("e4".to_string()),
             user_move_eval: Some(ScoreData { kind: "cp".to_string(), value: 0 }),
             engine_move_eval: Some(ScoreData { kind: "cp".to_string(), value: 20 }),
-            concepts_lost: vec!["Piece activity decreased".to_string()],
+            eval_diff_cp: Some(20),
+            eval_diff_pawns: Some(0.2),
+            concepts_lost: vec!["Your move loses the initiative".to_string()],
+            concepts_gained: vec!["Engine move keeps the initiative".to_string()],
             tactical_impact: vec![],
-            summary: "Eval swing: +0.00 → +0.20 (+20 centipawns). Your move loses: Piece activity decreased".to_string(),
+            strategic_difference: vec!["White's pieces became less active".to_string()],
+            why_engine: vec!["Engine move avoids: Your move loses the initiative".to_string()],
+            summary: "Your move Nf3 is 0.2 pawns worse than engine move e4.".to_string(),
         };
 
         let prompt = build_comparison_prompt(&comparison, &ExplanationLevel::Basic, None);
         let json_str = serde_json::to_string(&prompt).unwrap();
         assert!(json_str.contains("compare_moves"));
         assert!(json_str.contains("g1f3"));
+        assert!(json_str.contains("why_engine"));
+        assert!(json_str.contains("eval_diff_pawns"));
     }
 
     #[test]
