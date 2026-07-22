@@ -1,6 +1,15 @@
+import { Chess } from "chess.js";
 import { create } from "zustand";
-import type { EvalSwing, MoveComparison, ScoreData, SwingSeverity } from "../types/analysis";
-import type { Score } from "../types/engine";
+import type {
+  ConceptEvaluation,
+  EngineLineInfo,
+  EvalSwing,
+  MoveComparison,
+  PlanSkeleton,
+  ScoreData,
+  SwingSeverity,
+} from "../types/analysis";
+import type { AnalysisLine, Score } from "../types/engine";
 import * as tauri from "../lib/tauri";
 
 /** Minimum absolute swing (cp) before we request / show a card. */
@@ -8,6 +17,9 @@ export const SWING_DISPLAY_THRESHOLD_CP = 50;
 
 /** Minimum absolute eval gap (cp) to show comparison when no feature signal. */
 export const COMPARISON_DISPLAY_THRESHOLD_CP = 30;
+
+/** Minimum engine depth before we request a plan for the position. */
+export const PLAN_MIN_DEPTH = 8;
 
 interface PositionEval {
   fen: string;
@@ -19,6 +31,15 @@ interface BestMoveInfo {
   uci: string;
   score: ScoreData;
   depth: number;
+}
+
+/** Plan data tied to a position + best move context. */
+export interface PositionPlan {
+  fen: string;
+  bestMoveUci: string | null;
+  bestMoveSan: string | null;
+  concepts: ConceptEvaluation;
+  plan: PlanSkeleton;
 }
 
 interface AnalysisState {
@@ -41,6 +62,15 @@ interface AnalysisState {
   comparisonExplanation: string | null;
   comparisonExplaining: boolean;
 
+  /** Current plan for the active position. */
+  currentPlan: PositionPlan | null;
+  planLoading: boolean;
+  planError: string | null;
+  planExplanation: string | null;
+  planExplaining: boolean;
+  /** FEN currently being (or last successfully) planned — avoids duplicate fetches. */
+  planFen: string | null;
+
   recordEval: (fen: string, score: Score, depth: number) => void;
   recordBestMove: (fen: string, uci: string, score: Score, depth: number) => void;
   getEval: (fen: string) => PositionEval | undefined;
@@ -56,8 +86,13 @@ interface AnalysisState {
     userMove: string;
     engineMove: string;
   }) => Promise<void>;
+  analyzePlan: (params: {
+    fen: string;
+    engineLines: AnalysisLine[];
+  }) => Promise<void>;
   clearSwing: () => void;
   clearComparison: () => void;
+  clearPlan: () => void;
   clearAnalysisCards: () => void;
   setSwingExplanation: (text: string | null) => void;
   setSwingExplaining: (v: boolean) => void;
@@ -65,6 +100,9 @@ interface AnalysisState {
   setComparisonExplanation: (text: string | null) => void;
   setComparisonExplaining: (v: boolean) => void;
   dismissComparison: () => void;
+  setPlanExplanation: (text: string | null) => void;
+  setPlanExplaining: (v: boolean) => void;
+  dismissPlan: () => void;
 }
 
 function scoreToData(score: Score): ScoreData {
@@ -72,6 +110,23 @@ function scoreToData(score: Score): ScoreData {
     return { kind: "cp", value: score.value };
   }
   return { kind: "mate", value: score.value };
+}
+
+function analysisLinesToEngineInfo(lines: AnalysisLine[]): EngineLineInfo[] {
+  return lines.map((l) => ({
+    depth: l.depth,
+    score: scoreToData(l.score),
+    pv: l.pv,
+    multipv: l.multipv,
+  }));
+}
+
+function hasPlanContent(plan: PlanSkeleton): boolean {
+  return (
+    plan.immediate.length > 0 ||
+    plan.medium.length > 0 ||
+    plan.long_term.length > 0
+  );
 }
 
 function isSignificantSwing(swing: EvalSwing): boolean {
@@ -122,6 +177,12 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
   comparisonError: null,
   comparisonExplanation: null,
   comparisonExplaining: false,
+  currentPlan: null,
+  planLoading: false,
+  planError: null,
+  planExplanation: null,
+  planExplaining: false,
+  planFen: null,
 
   recordEval: (fen, score, depth) => {
     const existing = get().evalByFen[fen];
@@ -214,6 +275,66 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
     }
   },
 
+  analyzePlan: async ({ fen, engineLines }) => {
+    if (engineLines.length === 0) return;
+
+    const top = engineLines.find((l) => l.multipv === 1) ?? engineLines[0];
+    if (!top || top.depth < PLAN_MIN_DEPTH) return;
+
+    const { planFen, planLoading, currentPlan } = get();
+    // Skip if we already have a plan for this FEN, or a fetch is in flight for it
+    if (planFen === fen && (currentPlan !== null || planLoading)) return;
+
+    set({
+      planLoading: true,
+      planError: null,
+      planExplanation: null,
+      planFen: fen,
+    });
+
+    try {
+      const analysis = await tauri.analyzePosition(fen, analysisLinesToEngineInfo(engineLines));
+      // Stale response if the user navigated away
+      if (get().planFen !== fen) return;
+
+      const plan = analysis.concepts.plan;
+      if (!hasPlanContent(plan)) {
+        set({ currentPlan: null, planLoading: false });
+        return;
+      }
+
+      const bestUci = top.pv?.[0] ?? null;
+      let bestMoveSan: string | null = null;
+      if (bestUci && bestUci.length >= 4) {
+        try {
+          const chess = new Chess(fen);
+          const from = bestUci.slice(0, 2);
+          const to = bestUci.slice(2, 4);
+          const promotion = bestUci.length > 4 ? bestUci[4] : undefined;
+          const move = chess.move({ from, to, promotion });
+          bestMoveSan = move?.san ?? null;
+        } catch {
+          bestMoveSan = null;
+        }
+      }
+
+      set({
+        currentPlan: {
+          fen,
+          bestMoveUci: bestUci,
+          bestMoveSan,
+          concepts: analysis.concepts,
+          plan,
+        },
+        planLoading: false,
+      });
+    } catch (err) {
+      if (get().planFen !== fen) return;
+      const message = err instanceof Error ? err.message : "Failed to analyze plan";
+      set({ planLoading: false, planError: message, currentPlan: null });
+    }
+  },
+
   clearSwing: () =>
     set({
       currentSwing: null,
@@ -230,6 +351,16 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
       comparisonExplaining: false,
     }),
 
+  clearPlan: () =>
+    set({
+      currentPlan: null,
+      planError: null,
+      planExplanation: null,
+      planExplaining: false,
+      planLoading: false,
+      planFen: null,
+    }),
+
   clearAnalysisCards: () =>
     set({
       currentSwing: null,
@@ -240,6 +371,7 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
       comparisonError: null,
       comparisonExplanation: null,
       comparisonExplaining: false,
+      // Keep plan — it is position-scoped, not move-scoped
     }),
 
   setSwingExplanation: (text) => set({ swingExplanation: text }),
@@ -264,5 +396,19 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
       comparisonExplanation: null,
       comparisonExplaining: false,
       comparisonError: null,
+    }),
+
+  setPlanExplanation: (text) => set({ planExplanation: text }),
+
+  setPlanExplaining: (v) => set({ planExplaining: v }),
+
+  dismissPlan: () =>
+    set({
+      currentPlan: null,
+      planExplanation: null,
+      planExplaining: false,
+      planError: null,
+      planLoading: false,
+      planFen: null,
     }),
 }));

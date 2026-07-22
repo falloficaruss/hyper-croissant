@@ -13,6 +13,7 @@ interface PendingAnalysis {
 /**
  * Tracks engine evaluations per FEN and triggers eval-swing + why-not
  * comparison analysis when the user advances to a new position after a move.
+ * Also fetches the strategic plan for the current position.
  */
 export function useAnalysis() {
   const analysisLines = useEngineStore((s) => s.analysisLines);
@@ -24,7 +25,9 @@ export function useAnalysis() {
   const recordBestMove = useAnalysisStore((s) => s.recordBestMove);
   const analyzeSwing = useAnalysisStore((s) => s.analyzeSwing);
   const analyzeComparison = useAnalysisStore((s) => s.analyzeComparison);
+  const analyzePlan = useAnalysisStore((s) => s.analyzePlan);
   const clearAnalysisCards = useAnalysisStore((s) => s.clearAnalysisCards);
+  const clearPlan = useAnalysisStore((s) => s.clearPlan);
   const getEval = useAnalysisStore((s) => s.getEval);
   const getBestMove = useAnalysisStore((s) => s.getBestMove);
   const afterEval = useAnalysisStore((s) => s.evalByFen[fen]);
@@ -43,6 +46,19 @@ export function useAnalysis() {
       recordBestMove(fen, bestUci, top.score, top.depth);
     }
   }, [analysisLines, fen, recordEval, recordBestMove]);
+
+  // Clear plan when position changes (new fetch will repopulate once engine reports)
+  useEffect(() => {
+    clearPlan();
+  }, [fen, clearPlan]);
+
+  // Fetch plan once engine has produced lines for the current position
+  useEffect(() => {
+    if (analysisLines.length === 0) return;
+    // Only trust lines after we've recorded an eval for this FEN
+    if (!getEval(fen)) return;
+    void analyzePlan({ fen, engineLines: analysisLines });
+  }, [fen, analysisLines, analyzePlan, getEval]);
 
   // When the position changes due to a move (index increased), run analyses
   useEffect(() => {

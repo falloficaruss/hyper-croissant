@@ -521,6 +521,193 @@
   cursor: default;
 }
 
+/* ── Plan Card ── */
+
+.plan-card {
+  font-size: 13px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 10px 12px;
+  border-left: 3px solid #2ecc71;
+}
+
+.plan-loading {
+  color: var(--text-secondary);
+  font-style: italic;
+  border-left-color: var(--border);
+}
+
+.plan-error {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  color: #e74c3c;
+  border-left-color: #e74c3c;
+}
+
+.plan-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.plan-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(46, 204, 113, 0.2);
+  color: #2ecc71;
+}
+
+.plan-move {
+  font-family: var(--mono);
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.plan-dismiss {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.plan-dismiss:hover {
+  background: var(--bg-hover);
+  color: var(--text-h);
+}
+
+.plan-summary {
+  font-size: 12px;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.plan-key-ideas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.plan-idea-chip {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: rgba(46, 204, 113, 0.12);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.25);
+}
+
+.plan-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.plan-branch {
+  border-radius: 4px;
+}
+
+.plan-branch-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  padding: 4px 6px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.plan-branch-header:hover {
+  background: var(--bg-hover);
+}
+
+.plan-branch-chevron {
+  display: inline-block;
+  font-size: 10px;
+  color: var(--text-secondary);
+  transition: transform 0.15s ease;
+  width: 12px;
+}
+
+.plan-branch-chevron.expanded {
+  transform: rotate(90deg);
+}
+
+.plan-branch-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-secondary);
+}
+
+.plan-branch-list {
+  margin: 0 0 4px;
+  padding-left: 28px;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.plan-branch-list li {
+  margin-bottom: 2px;
+}
+
+.plan-explanation {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.plan-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.plan-explain-btn {
+  font-size: 12px;
+  padding: 4px 10px;
+  border: 1px solid var(--accent-border);
+  border-radius: 4px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.plan-explain-btn:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.25);
+}
+
+.plan-explain-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* ── Analysis Panel ── */
 
 .analysis-panel {

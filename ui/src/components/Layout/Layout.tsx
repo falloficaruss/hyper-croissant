@@ -7,6 +7,7 @@ import { AnalysisPanel } from "../Analysis/AnalysisPanel";
 import { EngineControls } from "../Analysis/EngineControls";
 import { EvalSwingCard } from "../Analysis/EvalSwingCard";
 import { ComparisonCard } from "../Analysis/ComparisonCard";
+import { PlanCard } from "../Analysis/PlanCard";
 import { ExplanationPanel } from "../LLM/ExplanationPanel";
 import { useGameStore } from "../../stores/gameStore";
 import { useAnalysisStore } from "../../stores/analysisStore";
@@ -22,6 +23,9 @@ export function Layout() {
       s.currentComparison !== null ||
       s.comparisonLoading ||
       s.comparisonError !== null,
+  );
+  const hasPlan = useAnalysisStore(
+    (s) => s.currentPlan !== null || s.planLoading || s.planError !== null,
   );
 
   return (
@@ -57,6 +61,11 @@ export function Layout() {
           {hasComparison && (
             <div className="sidebar-section">
               <ComparisonCard />
+            </div>
+          )}
+          {hasPlan && (
+            <div className="sidebar-section">
+              <PlanCard />
             </div>
           )}
           <div className="sidebar-section analysis-section">
