@@ -3,7 +3,12 @@ import type { PieceDropHandlerArgs } from "react-chessboard";
 import { useGameStore } from "../../stores/gameStore";
 import { useEngineStore } from "../../stores/engineStore";
 
-export function ChessBoard() {
+interface Props {
+  /** Hide engine best-move arrow (coach mode). */
+  hideBestMove?: boolean;
+}
+
+export function ChessBoard({ hideBestMove = false }: Props) {
   const fen = useGameStore((s) => s.fen);
   const boardFlipped = useGameStore((s) => s.boardFlipped);
   const lastMove = useGameStore((s) => s.lastMove);
@@ -26,7 +31,7 @@ export function ChessBoard() {
   if (lastMove) {
     arrows.push({ startSquare: lastMove.from, endSquare: lastMove.to, color: "#fff" });
   }
-  if (bestMove && bestMove.length >= 4) {
+  if (!hideBestMove && bestMove && bestMove.length >= 4) {
     arrows.push({
       startSquare: bestMove.slice(0, 2),
       endSquare: bestMove.slice(2, 4),

@@ -9,12 +9,21 @@ import { EvalSwingCard } from "../Analysis/EvalSwingCard";
 import { ComparisonCard } from "../Analysis/ComparisonCard";
 import { PlanCard } from "../Analysis/PlanCard";
 import { ExplanationPanel } from "../LLM/ExplanationPanel";
+import { CoachMode } from "../Coach/CoachMode";
 import { useGameStore } from "../../stores/gameStore";
 import { useAnalysisStore } from "../../stores/analysisStore";
+import { useCoachStore } from "../../stores/coachStore";
 import "./Layout.css";
 
 export function Layout() {
   const toggleFlip = useGameStore((s) => s.toggleFlip);
+  const coachEnabled = useCoachStore((s) => s.enabled);
+  const coachPhase = useCoachStore((s) => s.phase);
+  const setCoachEnabled = useCoachStore((s) => s.setEnabled);
+
+  // Hide spoilers while coaching (until answer is revealed)
+  const hideAnalysis = coachEnabled && coachPhase !== "revealed";
+
   const hasSwing = useAnalysisStore(
     (s) => s.currentSwing !== null || s.swingLoading || s.swingError !== null,
   );
@@ -32,15 +41,29 @@ export function Layout() {
     <div className="app-layout">
       <header className="app-header">
         <h1 className="app-title">Hyper-Croissant</h1>
-        <button className="flip-btn" onClick={toggleFlip} title="Flip board">
-          Flip Board
-        </button>
+        <div className="header-actions">
+          <button
+            className={`coach-header-btn${coachEnabled ? " active" : ""}`}
+            onClick={() => setCoachEnabled(!coachEnabled)}
+            title={
+              coachEnabled
+                ? "Exit coach mode"
+                : "Enter coach mode — hide analysis and practice with questions"
+            }
+            type="button"
+          >
+            {coachEnabled ? "Coach On" : "Coach Mode"}
+          </button>
+          <button className="flip-btn" onClick={toggleFlip} title="Flip board" type="button">
+            Flip Board
+          </button>
+        </div>
       </header>
       <main className="app-main">
         <section className="board-area">
-          <EvalBar />
+          <EvalBar hideNumbers={hideAnalysis} />
           <div className="board-panel">
-            <ChessBoard />
+            <ChessBoard hideBestMove={hideAnalysis} />
           </div>
         </section>
         <aside className="sidebar">
@@ -53,27 +76,36 @@ export function Layout() {
           <div className="sidebar-section">
             <EngineControls />
           </div>
-          {hasSwing && (
+
+          <div className={`sidebar-section${coachEnabled ? " analysis-section" : ""}`}>
+            <CoachMode />
+          </div>
+
+          {!hideAnalysis && hasSwing && (
             <div className="sidebar-section">
               <EvalSwingCard />
             </div>
           )}
-          {hasComparison && (
+          {!hideAnalysis && hasComparison && (
             <div className="sidebar-section">
               <ComparisonCard />
             </div>
           )}
-          {hasPlan && (
+          {!hideAnalysis && hasPlan && (
             <div className="sidebar-section">
               <PlanCard />
             </div>
           )}
-          <div className="sidebar-section analysis-section">
-            <AnalysisPanel />
-          </div>
-          <div className="sidebar-section analysis-section">
-            <ExplanationPanel />
-          </div>
+          {!hideAnalysis && (
+            <div className="sidebar-section analysis-section">
+              <AnalysisPanel />
+            </div>
+          )}
+          {!coachEnabled && (
+            <div className="sidebar-section analysis-section">
+              <ExplanationPanel />
+            </div>
+          )}
           <div className="sidebar-section move-list-section">
             <h2 className="sidebar-heading">Moves</h2>
             <MoveList />

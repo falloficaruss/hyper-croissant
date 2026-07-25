@@ -1,0 +1,211 @@
+/* ── Coach Mode ── */
+
+.coach-mode {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-size: 13px;
+  min-height: 0;
+}
+
+.coach-mode-collapsed {
+  gap: 6px;
+}
+
+.coach-mode-active {
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+}
+
+.coach-mode-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.coach-mode-title {
+  font-weight: 600;
+  color: var(--text-h);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.coach-mode-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.coach-mode-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.coach-mode-toggle {
+  font-size: 12px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-weight: 500;
+  transition: opacity 0.15s;
+}
+
+.coach-mode-toggle:hover {
+  opacity: 0.85;
+}
+
+.coach-mode-toggle-exit {
+  background: var(--bg-secondary);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.coach-mode-toggle-exit:hover {
+  background: var(--bg-hover);
+  color: var(--text-h);
+}
+
+.coach-mode-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.coach-mode-banner {
+  font-size: 11px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  line-height: 1.35;
+}
+
+.coach-mode-banner-warn {
+  background: rgba(241, 196, 15, 0.12);
+  border: 1px solid rgba(241, 196, 15, 0.35);
+  color: #f1c40f;
+}
+
+.coach-mode-banner-ok {
+  background: rgba(46, 204, 113, 0.12);
+  border: 1px solid rgba(46, 204, 113, 0.35);
+  color: #2ecc71;
+}
+
+.coach-mode-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.coach-action-btn {
+  font-size: 11px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--sans);
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.coach-action-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-h);
+}
+
+.coach-action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.coach-action-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.coach-action-primary:hover:not(:disabled) {
+  opacity: 0.9;
+  color: #fff;
+}
+
+.coach-action-reveal {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: var(--accent);
+  color: var(--text-h);
+}
+
+.coach-conversation-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.coach-conversation {
+  min-height: 120px;
+}
+
+/* Header coach toggle (layout) */
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.coach-header-btn {
+  font-size: 13px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--sans);
+  transition: all 0.15s;
+}
+
+.coach-header-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-h);
+}
+
+.coach-header-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.coach-header-btn.active:hover {
+  opacity: 0.9;
+  color: #fff;
+}
+
+/* Dimmed eval bar in coach mode (hidden numbers) */
+
+.eval-bar.coach-hidden .eval-bar-text {
+  display: none;
+}
+
+.eval-bar.coach-hidden .eval-bar-white,
+.eval-bar.coach-hidden .eval-bar-black {
+  opacity: 0.25;
+}

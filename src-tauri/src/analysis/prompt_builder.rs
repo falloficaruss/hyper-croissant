@@ -150,6 +150,75 @@ fn format_score_data(score: &ScoreData) -> String {
     }
 }
 
+/// A single turn in a coach-mode conversation (for structured prompts).
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct CoachHistoryEntry {
+    pub role: String,
+    pub content: String,
+}
+
+/// Build a structured JSON prompt for interactive coach mode.
+///
+/// When `revealed` is false, the coach must ask Socratic questions and must not
+/// spoil the best move / full plan. When true, the coach may fully explain.
+pub fn build_coach_prompt(
+    analysis: &StructuredAnalysis,
+    level: &ExplanationLevel,
+    conversation_history: &[CoachHistoryEntry],
+    revealed: bool,
+    user_message: Option<&str>,
+) -> Value {
+    let best_move = analysis
+        .engine_lines
+        .first()
+        .and_then(|l| l.pv.first())
+        .cloned()
+        .unwrap_or_default();
+    let evaluation = analysis
+        .engine_lines
+        .first()
+        .map(|l| format_score_data(&l.score))
+        .unwrap_or_default();
+
+    let prompt_type = if revealed {
+        "coach_reveal"
+    } else if conversation_history.is_empty() && user_message.is_none() {
+        "coach_question"
+    } else {
+        "coach_follow_up"
+    };
+
+    json!({
+        "type": prompt_type,
+        "explanation_level": level.as_str(),
+        "hidden": !revealed,
+        "user_message": user_message,
+        "conversation_history": conversation_history,
+        "analysis": {
+            "fen": analysis.fen,
+            "best_move": best_move,
+            "evaluation": evaluation,
+            "concepts": {
+                "initiative": analysis.concepts.initiative,
+                "tempo_advantage": analysis.concepts.tempo_advantage,
+                "key_ideas": analysis.concepts.key_ideas,
+                "plan": {
+                    "immediate": analysis.concepts.plan.immediate,
+                    "three_move": analysis.concepts.plan.medium,
+                    "long_term": analysis.concepts.plan.long_term,
+                },
+                "strategic_summary": analysis.concepts.strategic_summary,
+            },
+            "tactics": analysis.tactics.iter().map(|t| json!({
+                "motif": t.motif_type,
+                "target": t.target,
+                "description": t.description,
+                "severity": t.severity,
+            })).collect::<Vec<_>>(),
+        },
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -259,5 +328,180 @@ mod tests {
         assert!(json_str.contains("explain_swing"));
         assert!(json_str.contains("e2e4"));
         assert!(json_str.contains("consequences"));
+    }
+
+    fn sample_analysis() -> StructuredAnalysis {
+        StructuredAnalysis {
+            fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1".to_string(),
+            features: Features {
+                white: SideFeatures {
+                    king_safety: KingSafety {
+                        pawn_shield_score: 0,
+                        open_files_near_king: vec![],
+                        storm_attackers_near_king: 0,
+                    },
+                    pawn_structure: PawnStructure {
+                        island_count: 0,
+                        passed_pawns: vec![],
+                        backward_pawns: vec![],
+                        doubled_pawns: vec![],
+                        isolated_pawns: vec![],
+                    },
+                    files: FileInfo {
+                        open_files: vec![],
+                        half_open_for: vec![],
+                    },
+                    square_control: SquareControl {
+                        weak_squares: vec![],
+                        outposts: vec![],
+                    },
+                    piece_activity: PieceActivity {
+                        total_mobility: 0,
+                        centralization: 0.0,
+                        piece_scores: vec![],
+                    },
+                    space: SpaceInfo {
+                        controlled_opponent_side: 0,
+                    },
+                    material: MaterialInfo {
+                        pieces: PieceCount {
+                            pawns: 8,
+                            knights: 2,
+                            bishops: 2,
+                            rooks: 2,
+                            queens: 1,
+                        },
+                        has_bishop_pair: true,
+                    },
+                    tactical_precursors: TacticalPrecursors {
+                        hanging_pieces: vec![],
+                        undefended_pieces: vec![],
+                        pins: vec![],
+                        forks: vec![],
+                    },
+                },
+                black: SideFeatures {
+                    king_safety: KingSafety {
+                        pawn_shield_score: 0,
+                        open_files_near_king: vec![],
+                        storm_attackers_near_king: 0,
+                    },
+                    pawn_structure: PawnStructure {
+                        island_count: 0,
+                        passed_pawns: vec![],
+                        backward_pawns: vec![],
+                        doubled_pawns: vec![],
+                        isolated_pawns: vec![],
+                    },
+                    files: FileInfo {
+                        open_files: vec![],
+                        half_open_for: vec![],
+                    },
+                    square_control: SquareControl {
+                        weak_squares: vec![],
+                        outposts: vec![],
+                    },
+                    piece_activity: PieceActivity {
+                        total_mobility: 0,
+                        centralization: 0.0,
+                        piece_scores: vec![],
+                    },
+                    space: SpaceInfo {
+                        controlled_opponent_side: 0,
+                    },
+                    material: MaterialInfo {
+                        pieces: PieceCount {
+                            pawns: 8,
+                            knights: 2,
+                            bishops: 2,
+                            rooks: 2,
+                            queens: 1,
+                        },
+                        has_bishop_pair: true,
+                    },
+                    tactical_precursors: TacticalPrecursors {
+                        hanging_pieces: vec![],
+                        undefended_pieces: vec![],
+                        pins: vec![],
+                        forks: vec![],
+                    },
+                },
+                turn: "w".to_string(),
+            },
+            concepts: ConceptEvaluation {
+                initiative: None,
+                tempo_advantage: 0,
+                key_ideas: vec!["Develop pieces and control the center".to_string()],
+                plan: PlanSkeleton {
+                    immediate: vec!["Improve piece positioning".to_string()],
+                    medium: vec!["Improve piece coordination".to_string()],
+                    long_term: vec!["Reach a favorable endgame".to_string()],
+                },
+                strategic_summary: "The position is roughly balanced.".to_string(),
+            },
+            tactics: vec![],
+            engine_lines: vec![EngineLineInfo {
+                depth: 18,
+                score: ScoreData {
+                    kind: "cp".to_string(),
+                    value: 20,
+                },
+                pv: vec!["e2e4".to_string()],
+                multipv: Some(1),
+            }],
+        }
+    }
+
+    #[test]
+    fn test_build_coach_prompt_initial_question() {
+        let analysis = sample_analysis();
+        let prompt = build_coach_prompt(&analysis, &ExplanationLevel::Standard, &[], false, None);
+        let json_str = serde_json::to_string(&prompt).unwrap();
+        assert!(json_str.contains("coach_question"));
+        assert!(json_str.contains("\"hidden\":true"));
+        assert!(json_str.contains("key_ideas"));
+        assert!(json_str.contains("e2e4"));
+    }
+
+    #[test]
+    fn test_build_coach_prompt_follow_up() {
+        let analysis = sample_analysis();
+        let history = vec![
+            CoachHistoryEntry {
+                role: "assistant".to_string(),
+                content: "What would you improve first?".to_string(),
+            },
+            CoachHistoryEntry {
+                role: "user".to_string(),
+                content: "I'd attack the king".to_string(),
+            },
+        ];
+        let prompt = build_coach_prompt(
+            &analysis,
+            &ExplanationLevel::Standard,
+            &history,
+            false,
+            Some("I'd attack the king"),
+        );
+        let json_str = serde_json::to_string(&prompt).unwrap();
+        assert!(json_str.contains("coach_follow_up"));
+        assert!(json_str.contains("\"hidden\":true"));
+        assert!(json_str.contains("I'd attack the king"));
+    }
+
+    #[test]
+    fn test_build_coach_prompt_reveal() {
+        let analysis = sample_analysis();
+        let prompt = build_coach_prompt(
+            &analysis,
+            &ExplanationLevel::Deep,
+            &[],
+            true,
+            Some("reveal"),
+        );
+        let json_str = serde_json::to_string(&prompt).unwrap();
+        assert!(json_str.contains("coach_reveal"));
+        assert!(json_str.contains("\"hidden\":false"));
+        assert!(json_str.contains("deep"));
     }
 }

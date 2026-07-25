@@ -16,7 +16,8 @@ pub use tactics::detect_tactics;
 pub use comparison::{compare_moves, is_significant_comparison, COMPARISON_THRESHOLD_CP};
 pub use eval_swing::{analyze_eval_swing, SWING_THRESHOLD_CP};
 pub use prompt_builder::{
-    build_analysis_prompt, build_comparison_prompt, build_swing_prompt, ExplanationLevel,
+    build_analysis_prompt, build_coach_prompt, build_comparison_prompt, build_swing_prompt,
+    CoachHistoryEntry, ExplanationLevel,
 };
 pub use validator::validate_llm_output;
 pub use position_cache::PositionCache;
