@@ -1,6 +1,7 @@
 use crate::chess::{self, MoveData, MoveResult, PositionData};
 use crate::engine::{EngineCommand, EngineConfig, EngineManager};
 use crate::error::HyperCroissantError;
+use crate::game::{self, GameStore, SavedGame, SavedGameSummary};
 use tauri::{AppHandle, State};
 
 #[tauri::command]
@@ -73,6 +74,94 @@ pub async fn make_moves_command(
 #[tauri::command]
 pub async fn get_game_from_pgn(pgn: String) -> Result<chess::GameData, HyperCroissantError> {
     chess::pgn_to_game(&pgn).map_err(HyperCroissantError::InvalidPgn)
+}
+
+// ── Game library (Phase 8) ──────────────────────────────────────────
+
+#[tauri::command]
+pub async fn save_game(
+    pgn: String,
+    id: Option<i64>,
+    store: State<'_, GameStore>,
+) -> Result<SavedGameSummary, HyperCroissantError> {
+    let game = chess::pgn_to_game(&pgn).map_err(HyperCroissantError::InvalidPgn)?;
+    let canonical = chess::game_to_pgn(&game);
+    let saved = match id {
+        Some(existing_id) => store
+            .update(existing_id, &game, &canonical)
+            .map_err(|e| {
+                if e.contains("not found") {
+                    HyperCroissantError::GameNotFound(existing_id)
+                } else {
+                    HyperCroissantError::GameStoreError(e)
+                }
+            })?,
+        None => store
+            .save_new(&game, &canonical)
+            .map_err(HyperCroissantError::GameStoreError)?,
+    };
+    Ok(saved.into_summary())
+}
+
+#[tauri::command]
+pub async fn load_game(
+    id: i64,
+    store: State<'_, GameStore>,
+) -> Result<SavedGame, HyperCroissantError> {
+    store
+        .load(id)
+        .map_err(HyperCroissantError::GameStoreError)?
+        .ok_or(HyperCroissantError::GameNotFound(id))
+}
+
+#[tauri::command]
+pub async fn list_games(
+    query: Option<String>,
+    store: State<'_, GameStore>,
+) -> Result<Vec<SavedGameSummary>, HyperCroissantError> {
+    store
+        .list(query.as_deref())
+        .map_err(HyperCroissantError::GameStoreError)
+}
+
+#[tauri::command]
+pub async fn delete_game(
+    id: i64,
+    store: State<'_, GameStore>,
+) -> Result<(), HyperCroissantError> {
+    let deleted = store
+        .delete(id)
+        .map_err(HyperCroissantError::GameStoreError)?;
+    if !deleted {
+        return Err(HyperCroissantError::GameNotFound(id));
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn import_pgn(
+    pgn: String,
+    store: State<'_, GameStore>,
+) -> Result<Vec<SavedGameSummary>, HyperCroissantError> {
+    game::import_pgn_text(&store, &pgn)
+}
+
+#[tauri::command]
+pub async fn export_pgn(
+    id: i64,
+    store: State<'_, GameStore>,
+) -> Result<String, HyperCroissantError> {
+    let saved = store
+        .load(id)
+        .map_err(HyperCroissantError::GameStoreError)?
+        .ok_or(HyperCroissantError::GameNotFound(id))?;
+    Ok(game::saved_game_to_pgn(&saved))
+}
+
+/// Export arbitrary in-memory game data (current board session) as PGN.
+#[tauri::command]
+pub async fn game_data_to_pgn(game: chess::GameData) -> Result<String, HyperCroissantError> {
+    Ok(chess::game_to_pgn(&game))
 }
 
 #[tauri::command]

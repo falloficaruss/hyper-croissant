@@ -190,6 +190,27 @@
   gap: 6px;
 }
 
+.pgn-collapse-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+}
+
+.pgn-collapse-toggle:hover .pgn-label {
+  color: var(--accent);
+}
+
+.pgn-chevron {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
 .pgn-label {
   font-size: 11px;
   font-weight: 600;

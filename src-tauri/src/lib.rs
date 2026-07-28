@@ -3,9 +3,11 @@ pub mod chess;
 pub mod commands;
 pub mod engine;
 pub mod error;
+pub mod game;
 
 use std::sync::Mutex;
 
+use tauri::Manager;
 use tracing::info;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -18,6 +20,12 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .manage(engine::EngineManager::new())
         .manage(Mutex::new(analysis::PositionCache::new(1024)))
+        .setup(|app| {
+            let store = game::GameStore::open(app.handle())
+                .map_err(|e| Box::<dyn std::error::Error>::from(e))?;
+            app.manage(store);
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::start_engine,
             commands::stop_engine,
@@ -33,6 +41,13 @@ pub fn run() {
             commands::compare_moves_command,
             commands::get_cached_analysis,
             commands::analyze_eval_swing_command,
+            commands::save_game,
+            commands::load_game,
+            commands::list_games,
+            commands::delete_game,
+            commands::import_pgn,
+            commands::export_pgn,
+            commands::game_data_to_pgn,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Hyper-Croissant");

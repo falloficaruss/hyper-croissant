@@ -23,6 +23,10 @@ pub enum HyperCroissantError {
     ChannelClosed,
     #[error("Analysis error: {0}")]
     AnalysisError(String),
+    #[error("Game store error: {0}")]
+    GameStoreError(String),
+    #[error("Game not found: {0}")]
+    GameNotFound(i64),
 }
 
 impl From<std::io::Error> for HyperCroissantError {

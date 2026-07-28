@@ -2,6 +2,9 @@ import { ChessBoard } from "../ChessBoard/ChessBoard";
 import { MoveList } from "../MoveList/MoveList";
 import { PositionInfo } from "../PositionInfo/PositionInfo";
 import { PGNInput } from "../PGNInput/PGNInput";
+import { GameList } from "../Game/GameList";
+import { GameMetadata } from "../Game/GameMetadata";
+import { GameControls } from "../Game/GameControls";
 import { EvalBar } from "../Board/EvalBar";
 import { AnalysisPanel } from "../Analysis/AnalysisPanel";
 import { EngineControls } from "../Analysis/EngineControls";
@@ -68,6 +71,13 @@ export function Layout() {
         </section>
         <aside className="sidebar">
           <div className="sidebar-section">
+            <GameList />
+          </div>
+          <div className="sidebar-section">
+            <GameControls />
+            <div className="game-controls-spacer">
+              <GameMetadata />
+            </div>
             <PGNInput />
           </div>
           <div className="sidebar-section">

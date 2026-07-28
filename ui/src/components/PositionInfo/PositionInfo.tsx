@@ -7,7 +7,6 @@ export function PositionInfo() {
   const isCheckmate = useGameStore((s) => s.isCheckmate);
   const isStalemate = useGameStore((s) => s.isStalemate);
   const currentMoveIndex = useGameStore((s) => s.currentMoveIndex);
-  const gameData = useGameStore((s) => s.gameData);
 
   const moveNumber = Math.floor(currentMoveIndex / 2) + 1;
 
@@ -30,35 +29,6 @@ export function PositionInfo() {
         <span className="fen-label">FEN</span>
         <code className="fen-value">{fen}</code>
       </div>
-
-      {gameData && (
-        <div className="game-headers">
-          {gameData.headers.white && (
-            <div className="header-row">
-              <span className="header-label">White</span>
-              <span>{gameData.headers.white}</span>
-            </div>
-          )}
-          {gameData.headers.black && (
-            <div className="header-row">
-              <span className="header-label">Black</span>
-              <span>{gameData.headers.black}</span>
-            </div>
-          )}
-          {gameData.headers.event && (
-            <div className="header-row">
-              <span className="header-label">Event</span>
-              <span>{gameData.headers.event}</span>
-            </div>
-          )}
-          {gameData.headers.result && (
-            <div className="header-row">
-              <span className="header-label">Result</span>
-              <span>{gameData.headers.result}</span>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

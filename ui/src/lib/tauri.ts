@@ -1,5 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { MoveData, MoveResult, PositionData, GameData } from "../types/chess";
+import type {
+  MoveData,
+  MoveResult,
+  PositionData,
+  GameData,
+  SavedGame,
+  SavedGameSummary,
+} from "../types/chess";
 import type {
   StructuredAnalysis,
   MoveComparison,
@@ -23,6 +30,28 @@ export const makeMoves = (fen: string, uci_moves: string[]) =>
 
 export const getGameFromPGN = (pgn: string) =>
   invoke<GameData>("get_game_from_pgn", { pgn });
+
+// Game library (Phase 8)
+export const saveGame = (pgn: string, id?: number | null) =>
+  invoke<SavedGameSummary>("save_game", { pgn, id: id ?? null });
+
+export const loadGame = (id: number) =>
+  invoke<SavedGame>("load_game", { id });
+
+export const listGames = (query?: string | null) =>
+  invoke<SavedGameSummary[]>("list_games", { query: query ?? null });
+
+export const deleteGame = (id: number) =>
+  invoke<void>("delete_game", { id });
+
+export const importPgn = (pgn: string) =>
+  invoke<SavedGameSummary[]>("import_pgn", { pgn });
+
+export const exportPgn = (id: number) =>
+  invoke<string>("export_pgn", { id });
+
+export const gameDataToPgn = (game: GameData) =>
+  invoke<string>("game_data_to_pgn", { game });
 
 // Engine commands
 export const startEngine = (config: { path: string; name: string }) =>

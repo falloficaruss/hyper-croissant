@@ -43,6 +43,7 @@ pub struct GameHeaders {
     pub white: Option<String>,
     pub black: Option<String>,
     pub result: Option<String>,
+    pub eco: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -190,118 +191,196 @@ pub fn get_position_data(fen: &str) -> Result<PositionData, String> {
     Ok(position_data_from_pos(&pos))
 }
 
+pub const START_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const DEFAULT_START_FEN: &str = START_FEN;
+
+struct BuildGame {
+    headers: GameHeaders,
+    pos: Chess,
+    moves: Vec<MoveData>,
+    initial_fen: String,
+}
+
+impl BuildGame {
+    fn new() -> Self {
+        BuildGame {
+            headers: GameHeaders {
+                event: None,
+                site: None,
+                date: None,
+                round: None,
+                white: None,
+                black: None,
+                result: None,
+                eco: None,
+            },
+            pos: parse_fen(DEFAULT_START_FEN).expect("Default position should be valid"),
+            moves: Vec::new(),
+            initial_fen: DEFAULT_START_FEN.to_owned(),
+        }
+    }
+}
+
+struct GameParser;
+
+impl Visitor for GameParser {
+    type Tags = BuildGame;
+    type Movetext = BuildGame;
+    type Output = Result<GameData, String>;
+
+    fn begin_tags(&mut self) -> ControlFlow<Self::Output, Self::Tags> {
+        ControlFlow::Continue(BuildGame::new())
+    }
+
+    fn tag(
+        &mut self,
+        tags: &mut Self::Tags,
+        name: &[u8],
+        value: RawTag<'_>,
+    ) -> ControlFlow<Self::Output> {
+        let key = std::str::from_utf8(name).unwrap_or("");
+        let val = value.decode_utf8().unwrap_or_default().to_string();
+        match key {
+            "Event" => tags.headers.event = Some(val),
+            "Site" => tags.headers.site = Some(val),
+            "Date" => tags.headers.date = Some(val),
+            "Round" => tags.headers.round = Some(val),
+            "White" => tags.headers.white = Some(val),
+            "Black" => tags.headers.black = Some(val),
+            "Result" => tags.headers.result = Some(val),
+            "ECO" | "Eco" => tags.headers.eco = Some(val),
+            "FEN" | "Fen" => tags.initial_fen = val,
+            _ => {}
+        }
+        ControlFlow::Continue(())
+    }
+
+    fn begin_movetext(
+        &mut self,
+        mut tags: Self::Tags,
+    ) -> ControlFlow<Self::Output, Self::Movetext> {
+        if tags.initial_fen != DEFAULT_START_FEN {
+            match parse_fen(&tags.initial_fen) {
+                Ok(pos) => tags.pos = pos,
+                Err(e) => return ControlFlow::Break(Err(e)),
+            }
+        }
+        ControlFlow::Continue(tags)
+    }
+
+    fn san(
+        &mut self,
+        movetext: &mut Self::Movetext,
+        san_plus: SanPlus,
+    ) -> ControlFlow<Self::Output> {
+        let san = &san_plus.san;
+        match san.to_move(&movetext.pos) {
+            Ok(move_) => {
+                let move_data = build_move_data_unchecked(&movetext.pos, &move_);
+                movetext.pos.play_unchecked(move_);
+                movetext.moves.push(move_data);
+                ControlFlow::Continue(())
+            }
+            Err(e) => ControlFlow::Break(Err(format!("Invalid move '{}': {}", san, e))),
+        }
+    }
+
+    fn begin_variation(
+        &mut self,
+        _movetext: &mut Self::Movetext,
+    ) -> ControlFlow<Self::Output, Skip> {
+        ControlFlow::Continue(Skip(true))
+    }
+
+    fn end_game(&mut self, build: Self::Movetext) -> Self::Output {
+        Ok(GameData {
+            headers: build.headers,
+            moves: build.moves,
+            initial_fen: build.initial_fen,
+            final_fen: pos_to_fen(&build.pos),
+        })
+    }
+}
+
+/// Parse the first game from a PGN string.
 pub fn pgn_to_game(pgn: &str) -> Result<GameData, String> {
-    const DEFAULT_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    let mut games = pgn_to_games(pgn)?;
+    Ok(games.remove(0))
+}
 
-    struct BuildGame {
-        headers: GameHeaders,
-        pos: Chess,
-        moves: Vec<MoveData>,
-        initial_fen: String,
-    }
-
-    impl BuildGame {
-        fn new() -> Self {
-            BuildGame {
-                headers: GameHeaders {
-                    event: None,
-                    site: None,
-                    date: None,
-                    round: None,
-                    white: None,
-                    black: None,
-                    result: None,
-                },
-                pos: parse_fen(DEFAULT_FEN).expect("Default position should be valid"),
-                moves: Vec::new(),
-                initial_fen: DEFAULT_FEN.to_owned(),
-            }
-        }
-    }
-
-    struct GameParser;
-
-    impl Visitor for GameParser {
-        type Tags = BuildGame;
-        type Movetext = BuildGame;
-        type Output = Result<GameData, String>;
-
-        fn begin_tags(&mut self) -> ControlFlow<Self::Output, Self::Tags> {
-            ControlFlow::Continue(BuildGame::new())
-        }
-
-        fn tag(
-            &mut self,
-            tags: &mut Self::Tags,
-            name: &[u8],
-            value: RawTag<'_>,
-        ) -> ControlFlow<Self::Output> {
-            let key = std::str::from_utf8(name).unwrap_or("");
-            let val = value.decode_utf8().unwrap_or_default().to_string();
-            match key {
-                "Event" => tags.headers.event = Some(val),
-                "Site" => tags.headers.site = Some(val),
-                "Date" => tags.headers.date = Some(val),
-                "Round" => tags.headers.round = Some(val),
-                "White" => tags.headers.white = Some(val),
-                "Black" => tags.headers.black = Some(val),
-                "Result" => tags.headers.result = Some(val),
-                "FEN" | "Fen" => tags.initial_fen = val,
-                _ => {}
-            }
-            ControlFlow::Continue(())
-        }
-
-        fn begin_movetext(
-            &mut self,
-            mut tags: Self::Tags,
-        ) -> ControlFlow<Self::Output, Self::Movetext> {
-            if tags.initial_fen != DEFAULT_FEN {
-                match parse_fen(&tags.initial_fen) {
-                    Ok(pos) => tags.pos = pos,
-                    Err(e) => return ControlFlow::Break(Err(e)),
-                }
-            }
-            ControlFlow::Continue(tags)
-        }
-
-        fn san(
-            &mut self,
-            movetext: &mut Self::Movetext,
-            san_plus: SanPlus,
-        ) -> ControlFlow<Self::Output> {
-            let san = &san_plus.san;
-            match san.to_move(&movetext.pos) {
-                Ok(move_) => {
-                    let move_data = build_move_data_unchecked(&movetext.pos, &move_);
-                    movetext.pos.play_unchecked(move_);
-                    movetext.moves.push(move_data);
-                    ControlFlow::Continue(())
-                }
-                Err(e) => ControlFlow::Break(Err(format!("Invalid move '{}': {}", san, e))),
-            }
-        }
-
-        fn begin_variation(&mut self, _movetext: &mut Self::Movetext) -> ControlFlow<Self::Output, Skip> {
-            ControlFlow::Continue(Skip(true))
-        }
-
-        fn end_game(&mut self, build: Self::Movetext) -> Self::Output {
-            Ok(GameData {
-                headers: build.headers,
-                moves: build.moves,
-                initial_fen: build.initial_fen,
-                final_fen: pos_to_fen(&build.pos),
-            })
-        }
-    }
-
+/// Parse all games from a (possibly multi-game) PGN string.
+pub fn pgn_to_games(pgn: &str) -> Result<Vec<GameData>, String> {
     let mut reader = pgn_reader::Reader::new(pgn.as_bytes());
-    match reader.read_game(&mut GameParser) {
-        Ok(Some(result)) => result,
-        Ok(None) => Err("No game found in PGN".to_string()),
-        Err(e) => Err(format!("PGN I/O error: {}", e)),
+    let mut games = Vec::new();
+    loop {
+        match reader.read_game(&mut GameParser) {
+            Ok(Some(result)) => games.push(result?),
+            Ok(None) => break,
+            Err(e) => return Err(format!("PGN I/O error: {}", e)),
+        }
     }
+    if games.is_empty() {
+        return Err("No game found in PGN".to_string());
+    }
+    Ok(games)
+}
+
+/// Serialize a game back to PGN text.
+pub fn game_to_pgn(game: &GameData) -> String {
+    let mut out = String::new();
+
+    fn push_tag(out: &mut String, name: &str, value: &Option<String>) {
+        if let Some(v) = value {
+            out.push_str(&format!("[{} \"{}\"]\n", name, escape_pgn_tag(v)));
+        }
+    }
+
+    push_tag(&mut out, "Event", &game.headers.event);
+    push_tag(&mut out, "Site", &game.headers.site);
+    push_tag(&mut out, "Date", &game.headers.date);
+    push_tag(&mut out, "Round", &game.headers.round);
+    push_tag(&mut out, "White", &game.headers.white);
+    push_tag(&mut out, "Black", &game.headers.black);
+    push_tag(&mut out, "Result", &game.headers.result);
+    push_tag(&mut out, "ECO", &game.headers.eco);
+
+    if game.initial_fen != DEFAULT_START_FEN {
+        out.push_str("[SetUp \"1\"]\n");
+        out.push_str(&format!(
+            "[FEN \"{}\"]\n",
+            escape_pgn_tag(&game.initial_fen)
+        ));
+    }
+
+    // Ensure Result tag exists for valid PGN even if missing from headers
+    if game.headers.result.is_none() {
+        out.push_str("[Result \"*\"]\n");
+    }
+
+    out.push('\n');
+
+    for (i, m) in game.moves.iter().enumerate() {
+        if i % 2 == 0 {
+            if i > 0 {
+                out.push(' ');
+            }
+            out.push_str(&format!("{}.", i / 2 + 1));
+        }
+        out.push(' ');
+        out.push_str(&m.san);
+    }
+
+    let result = game.headers.result.as_deref().unwrap_or("*");
+    if !game.moves.is_empty() {
+        out.push(' ');
+    }
+    out.push_str(result);
+    out.push('\n');
+    out
+}
+
+fn escape_pgn_tag(value: &str) -> String {
+    value.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
 fn piece_char(move_: &Move) -> char {
@@ -501,6 +580,48 @@ mod tests {
     #[test]
     fn test_pgn_to_game_empty() {
         assert!(pgn_to_game("").is_err());
+    }
+
+    #[test]
+    fn test_pgn_to_games_multi() {
+        let pgn = r#"[White "A"]
+[Black "B"]
+[Result "1-0"]
+
+1. e4 e5 1-0
+
+[White "C"]
+[Black "D"]
+[ECO "B00"]
+[Result "0-1"]
+
+1. d4 d5 0-1
+"#;
+        let games = pgn_to_games(pgn).unwrap();
+        assert_eq!(games.len(), 2);
+        assert_eq!(games[0].headers.white.as_deref(), Some("A"));
+        assert_eq!(games[1].headers.eco.as_deref(), Some("B00"));
+        assert_eq!(games[1].moves.len(), 2);
+    }
+
+    #[test]
+    fn test_game_to_pgn_roundtrip() {
+        let pgn = r#"[Event "Roundtrip"]
+[White "W"]
+[Black "B"]
+[Result "1/2-1/2"]
+[ECO "C20"]
+
+1. e4 e5 2. Nf3 Nc6 1/2-1/2
+"#;
+        let game = pgn_to_game(pgn).unwrap();
+        let exported = game_to_pgn(&game);
+        let again = pgn_to_game(&exported).unwrap();
+        assert_eq!(again.headers.white, game.headers.white);
+        assert_eq!(again.headers.eco, game.headers.eco);
+        assert_eq!(again.moves.len(), game.moves.len());
+        assert_eq!(again.moves[0].san, "e4");
+        assert_eq!(again.moves[3].san, "Nc6");
     }
 
     #[test]
