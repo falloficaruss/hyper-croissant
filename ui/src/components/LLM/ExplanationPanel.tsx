@@ -3,7 +3,7 @@ import "./LLM.css";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { useGameStore } from "../../stores/gameStore";
 import { useEngineStore } from "../../stores/engineStore";
-import { getProviderOrThrow } from "../../lib/llm";
+import { resolveProvider } from "../../lib/llm";
 import { analyzePosition } from "../../lib/tauri";
 import { ExplanationLevel } from "./ExplanationLevel";
 import { LLMSettings } from "./LLMSettings";
@@ -77,13 +77,13 @@ export function ExplanationPanel({ systemPrompt = DEFAULT_SYSTEM_PROMPT }: Props
 
   const handleExplainPosition = useCallback(async () => {
     const config = getLLMConfig();
-    if (!config.apiKey && config.provider !== "ollama") {
+    if (!config.useProxy && !config.apiKey && config.provider !== "ollama") {
       setError("Please configure an API key in LLM Settings");
       setSettingsOpen(true);
       return;
     }
 
-    const provider = getProviderOrThrow(config.provider);
+    const provider = resolveProvider(config);
     abortRef.current?.abort();
     abortRef.current = new AbortController();
 

@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { severityLabel, useAnalysisStore } from "../../stores/analysisStore";
 import { useSettingsStore } from "../../stores/settingsStore";
-import { getProviderOrThrow } from "../../lib/llm";
+import { resolveProvider } from "../../lib/llm";
 import type { EvalSwing } from "../../types/analysis";
 import type { SwingSeverity } from "../../types/analysis";
 
@@ -55,7 +55,7 @@ export function EvalSwingCard() {
   const handleExplain = useCallback(async () => {
     if (!swing) return;
     const config = getLLMConfig();
-    if (!config.apiKey && config.provider !== "ollama") {
+    if (!config.useProxy && !config.apiKey && config.provider !== "ollama") {
       setSettingsOpen(true);
       return;
     }
@@ -92,7 +92,7 @@ CRITICAL RULES:
 - Match the requested explanation level.`;
 
     try {
-      const provider = getProviderOrThrow(config.provider);
+      const provider = resolveProvider(config);
       let accumulated = "";
       const full = await provider.chat({
         systemPrompt,

@@ -27,6 +27,10 @@ pub enum HyperCroissantError {
     GameStoreError(String),
     #[error("Game not found: {0}")]
     GameNotFound(i64),
+    #[error("LLM error: {0}")]
+    LlmError(String),
+    #[error("Keychain error: {0}")]
+    KeychainError(String),
 }
 
 impl From<std::io::Error> for HyperCroissantError {

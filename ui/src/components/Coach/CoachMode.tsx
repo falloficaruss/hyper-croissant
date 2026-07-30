@@ -3,7 +3,7 @@ import { useCoachStore, generateCoachEntryId } from "../../stores/coachStore";
 import { useGameStore } from "../../stores/gameStore";
 import { useEngineStore } from "../../stores/engineStore";
 import { useSettingsStore } from "../../stores/settingsStore";
-import { getProviderOrThrow } from "../../lib/llm";
+import { resolveProvider } from "../../lib/llm";
 import { analyzePosition } from "../../lib/tauri";
 import { LLMSettings } from "../LLM/LLMSettings";
 import { ExplanationLevel } from "../LLM/ExplanationLevel";
@@ -84,7 +84,7 @@ export function CoachMode() {
 
   const ensureApiKey = useCallback((): boolean => {
     const config = getLLMConfig();
-    if (!config.apiKey && config.provider !== "ollama") {
+    if (!config.useProxy && !config.apiKey && config.provider !== "ollama") {
       setError("Please configure an API key in LLM Settings");
       setSettingsOpen(true);
       return false;
@@ -111,7 +111,7 @@ export function CoachMode() {
       if (!ensureApiKey()) return;
 
       const config = getLLMConfig();
-      const provider = getProviderOrThrow(config.provider);
+      const provider = resolveProvider(config);
       abortRef.current?.abort();
       abortRef.current = new AbortController();
 

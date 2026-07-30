@@ -2,6 +2,8 @@ use crate::chess::{self, MoveData, MoveResult, PositionData};
 use crate::engine::{EngineCommand, EngineConfig, EngineManager};
 use crate::error::HyperCroissantError;
 use crate::game::{self, GameStore, SavedGame, SavedGameSummary};
+use crate::llm::{self, LlmChatRequest, LlmState};
+use tauri::ipc::Channel;
 use tauri::{AppHandle, State};
 
 #[tauri::command]
@@ -270,4 +272,47 @@ pub async fn analyze_eval_swing_command(
     let mut cached = cache.lock().unwrap();
     cached.insert_swing(swing.clone());
     Ok(swing)
+}
+
+#[tauri::command]
+pub async fn save_api_key(
+    provider: String,
+    key: String,
+    state: State<'_, LlmState>,
+) -> Result<(), HyperCroissantError> {
+    state.keychain().save(&provider, &key)
+}
+
+#[tauri::command]
+pub async fn load_api_key(
+    provider: String,
+    state: State<'_, LlmState>,
+) -> Result<Option<String>, HyperCroissantError> {
+    state.keychain().load(&provider)
+}
+
+#[tauri::command]
+pub async fn has_api_key(
+    provider: String,
+    state: State<'_, LlmState>,
+) -> Result<bool, HyperCroissantError> {
+    state.keychain().has(&provider)
+}
+
+#[tauri::command]
+pub async fn delete_api_key(
+    provider: String,
+    state: State<'_, LlmState>,
+) -> Result<(), HyperCroissantError> {
+    state.keychain().delete(&provider)
+}
+
+#[tauri::command]
+pub async fn llm_chat(
+    request: LlmChatRequest,
+    on_chunk: Channel<String>,
+    state: State<'_, LlmState>,
+) -> Result<String, HyperCroissantError> {
+    let channel = if request.stream { Some(&on_chunk) } else { None };
+    llm::chat(&state, &request, channel).await
 }

@@ -16,6 +16,17 @@ export interface LLMConfig {
   apiKey?: string;
   model: string;
   baseUrl?: string;
+  useProxy?: boolean;
+}
+
+// Wire shape for the Rust `llm_chat` command (serde camelCase).
+export interface LlmChatRequest {
+  provider: string;
+  model: string;
+  systemPrompt: string;
+  messages: LLMMessage[];
+  baseUrl?: string;
+  stream: boolean;
 }
 
 // ── Provider Interface ──

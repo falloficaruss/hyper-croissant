@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { useAnalysisStore } from "../../stores/analysisStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { useGameStore } from "../../stores/gameStore";
-import { getProviderOrThrow } from "../../lib/llm";
+import { resolveProvider } from "../../lib/llm";
 import type { MoveComparison } from "../../types/analysis";
 
 function formatScoreData(score: { kind: string; value: number } | null): string {
@@ -82,7 +82,7 @@ export function ComparisonCard() {
   const handleExplain = useCallback(async () => {
     if (!comparison) return;
     const config = getLLMConfig();
-    if (!config.apiKey && config.provider !== "ollama") {
+    if (!config.useProxy && !config.apiKey && config.provider !== "ollama") {
       setSettingsOpen(true);
       return;
     }
@@ -123,7 +123,7 @@ CRITICAL RULES:
 - Match the requested explanation level.`;
 
     try {
-      const provider = getProviderOrThrow(config.provider);
+      const provider = resolveProvider(config);
       let accumulated = "";
       const full = await provider.chat({
         systemPrompt,

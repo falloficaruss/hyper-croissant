@@ -363,3 +363,50 @@
   outline: none;
   border-color: var(--accent);
 }
+
+.llm-settings-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.llm-settings-keyrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.llm-settings-keyrow .llm-settings-input {
+  flex: 1;
+}
+
+.llm-settings-keystored {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.llm-settings-button {
+  font-size: 12px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text);
+  font-family: var(--sans);
+  cursor: pointer;
+}
+
+.llm-settings-button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.llm-settings-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.llm-settings-keyerror {
+  font-size: 12px;
+  color: var(--error, #e06c75);
+}

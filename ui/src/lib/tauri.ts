@@ -1,4 +1,5 @@
-import { invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
+import type { LlmChatRequest } from "../types/llm";
 import type {
   MoveData,
   MoveResult,
@@ -103,3 +104,19 @@ export const analyzeEvalSwing = (
     evalBefore,
     evalAfter,
   });
+
+// LLM proxy + keychain (Phase 3 backend)
+export const saveApiKey = (provider: string, key: string) =>
+  invoke<void>("save_api_key", { provider, key });
+
+export const loadApiKey = (provider: string) =>
+  invoke<string | null>("load_api_key", { provider });
+
+export const hasApiKey = (provider: string) =>
+  invoke<boolean>("has_api_key", { provider });
+
+export const deleteApiKey = (provider: string) =>
+  invoke<void>("delete_api_key", { provider });
+
+export const llmChat = (request: LlmChatRequest, onChunk: Channel<string>) =>
+  invoke<string>("llm_chat", { request, onChunk });

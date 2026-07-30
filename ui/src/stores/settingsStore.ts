@@ -9,12 +9,22 @@ interface PersistedSettings {
   model: string;
   baseUrl: string;
   explanationLevel: ExplanationLevel;
+  useProxy: boolean;
 }
 
 function loadPersisted(): PersistedSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as PersistedSettings;
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<PersistedSettings>;
+      return {
+        provider: parsed.provider ?? "openai",
+        model: parsed.model ?? "gpt-4o-mini",
+        baseUrl: parsed.baseUrl ?? "",
+        explanationLevel: parsed.explanationLevel ?? "intermediate",
+        useProxy: parsed.useProxy ?? false,
+      };
+    }
   } catch {
     // ignore
   }
@@ -23,6 +33,7 @@ function loadPersisted(): PersistedSettings {
     model: "gpt-4o-mini",
     baseUrl: "",
     explanationLevel: "intermediate",
+    useProxy: false,
   };
 }
 
@@ -41,6 +52,7 @@ interface SettingsState {
   model: string;
   baseUrl: string;
   explanationLevel: ExplanationLevel;
+  useProxy: boolean;
 
   // UI state
   settingsOpen: boolean;
@@ -51,6 +63,7 @@ interface SettingsState {
   setModel: (model: string) => void;
   setBaseUrl: (url: string) => void;
   setExplanationLevel: (level: ExplanationLevel) => void;
+  setUseProxy: (useProxy: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
 
   // Derived
@@ -74,6 +87,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
     model: determineModel(persisted.provider),
     baseUrl: persisted.baseUrl,
     explanationLevel: persisted.explanationLevel,
+    useProxy: persisted.useProxy,
     settingsOpen: false,
 
     setProvider: (id: string) => {
@@ -85,6 +99,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
         model: newModel,
         baseUrl: current.baseUrl,
         explanationLevel: current.explanationLevel,
+        useProxy: current.useProxy,
       });
     },
 
@@ -98,6 +113,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
         model,
         baseUrl: current.baseUrl,
         explanationLevel: current.explanationLevel,
+        useProxy: current.useProxy,
       });
     },
 
@@ -109,6 +125,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
         model: current.model,
         baseUrl: url,
         explanationLevel: current.explanationLevel,
+        useProxy: current.useProxy,
       });
     },
 
@@ -120,6 +137,19 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
         model: current.model,
         baseUrl: current.baseUrl,
         explanationLevel: level,
+        useProxy: current.useProxy,
+      });
+    },
+
+    setUseProxy: (useProxy: boolean) => {
+      const current = get();
+      set({ useProxy });
+      savePersisted({
+        provider: current.provider,
+        model: current.model,
+        baseUrl: current.baseUrl,
+        explanationLevel: current.explanationLevel,
+        useProxy,
       });
     },
 
@@ -136,6 +166,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
         apiKey: state.apiKey || undefined,
         model: state.model,
         baseUrl: state.baseUrl || undefined,
+        useProxy: state.useProxy,
       };
     },
   };

@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { useAnalysisStore } from "../../stores/analysisStore";
 import { useSettingsStore } from "../../stores/settingsStore";
-import { getProviderOrThrow } from "../../lib/llm";
+import { resolveProvider } from "../../lib/llm";
 import type { PlanSkeleton } from "../../types/analysis";
 
 function planHasContent(plan: PlanSkeleton): boolean {
@@ -72,7 +72,7 @@ export function PlanCard() {
   const handleExplain = useCallback(async () => {
     if (!planData) return;
     const config = getLLMConfig();
-    if (!config.apiKey && config.provider !== "ollama") {
+    if (!config.useProxy && !config.apiKey && config.provider !== "ollama") {
       setSettingsOpen(true);
       return;
     }
@@ -109,7 +109,7 @@ CRITICAL RULES:
 - Structure your answer around the plan timeline: immediate idea → short-term plan → long-term goal.`;
 
     try {
-      const provider = getProviderOrThrow(config.provider);
+      const provider = resolveProvider(config);
       let accumulated = "";
       const full = await provider.chat({
         systemPrompt,

@@ -38,6 +38,11 @@ pgn-reader = "0.29.0"
 # Game library
 rusqlite = { version = "0.31", features = ["bundled"] }
 
+# LLM proxy + keychain
+keyring = { version = "3", default-features = false, features = ["sync-secret-service", "crypto-rust"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
+futures-util = { version = "0.3", default-features = false }
+
 [build-dependencies]
 tauri-build = "2.0.0"
 
