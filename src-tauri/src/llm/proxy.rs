@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tauri::ipc::Channel;
 
-use crate::error::HyperCroissantError;
+use crate::error::OropisError;
 
 use super::keychain::{KeychainBackend, OsKeychainBackend};
 
@@ -115,7 +115,7 @@ pub async fn chat(
     state: &LlmState,
     request: &LlmChatRequest,
     on_chunk: Option<&Channel<String>>,
-) -> Result<String, HyperCroissantError> {
+) -> Result<String, OropisError> {
     let stream = on_chunk.is_some();
     let base_url = request
         .base_url
@@ -125,7 +125,7 @@ pub async fn chat(
 
     let api_key = if provider_needs_key(&request.provider) {
         Some(state.keychain.load(&request.provider)?.ok_or_else(|| {
-            HyperCroissantError::KeychainError(format!(
+            OropisError::KeychainError(format!(
                 "No API key stored for provider '{}'",
                 request.provider
             ))
@@ -150,12 +150,12 @@ pub async fn chat(
     let response = builder
         .send()
         .await
-        .map_err(|e| HyperCroissantError::LlmError(e.to_string()))?;
+        .map_err(|e| OropisError::LlmError(e.to_string()))?;
 
     let status = response.status();
     if !status.is_success() {
         let text = response.text().await.unwrap_or_default();
-        return Err(HyperCroissantError::LlmError(format!(
+        return Err(OropisError::LlmError(format!(
             "{} returned HTTP {}: {}",
             request.provider, status, text
         )));
@@ -167,7 +167,7 @@ pub async fn chat(
             let body: Value = response
                 .json()
                 .await
-                .map_err(|e| HyperCroissantError::LlmError(e.to_string()))?;
+                .map_err(|e| OropisError::LlmError(e.to_string()))?;
             extract_full_text(&request.provider, &body)
         }
     }
@@ -177,13 +177,13 @@ async fn stream_response(
     provider: &str,
     response: reqwest::Response,
     channel: &Channel<String>,
-) -> Result<String, HyperCroissantError> {
+) -> Result<String, OropisError> {
     let mut byte_stream = response.bytes_stream();
     let mut buffer = String::new();
     let mut full = String::new();
 
     while let Some(chunk) = byte_stream.next().await {
-        let chunk = chunk.map_err(|e| HyperCroissantError::LlmError(e.to_string()))?;
+        let chunk = chunk.map_err(|e| OropisError::LlmError(e.to_string()))?;
         buffer.push_str(&String::from_utf8_lossy(&chunk));
         for delta in drain_frames(provider, &mut buffer) {
             full.push_str(&delta);
@@ -277,7 +277,7 @@ fn parse_ollama_delta(payload: &str) -> Option<String> {
     json["message"]["content"].as_str().map(str::to_string)
 }
 
-fn extract_full_text(provider: &str, body: &Value) -> Result<String, HyperCroissantError> {
+fn extract_full_text(provider: &str, body: &Value) -> Result<String, OropisError> {
     let text = match provider {
         PROVIDER_ANTHROPIC => body["content"]
             .as_array()
@@ -295,7 +295,7 @@ fn extract_full_text(provider: &str, body: &Value) -> Result<String, HyperCroiss
             .map(str::to_string),
     };
     text.ok_or_else(|| {
-        HyperCroissantError::LlmError(format!(
+        OropisError::LlmError(format!(
             "Could not extract text from {} response: {}",
             provider, body
         ))

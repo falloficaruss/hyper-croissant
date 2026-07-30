@@ -1,20 +1,20 @@
 use crate::chess::{self, GameData};
 use crate::game::store::{GameStore, SavedGame, SavedGameSummary};
-use crate::error::HyperCroissantError;
+use crate::error::OropisError;
 
 /// Parse and import one or more games from PGN text into the store.
 pub fn import_pgn_text(
     store: &GameStore,
     pgn: &str,
-) -> Result<Vec<SavedGameSummary>, HyperCroissantError> {
-    let games = chess::pgn_to_games(pgn).map_err(HyperCroissantError::InvalidPgn)?;
+) -> Result<Vec<SavedGameSummary>, OropisError> {
+    let games = chess::pgn_to_games(pgn).map_err(OropisError::InvalidPgn)?;
     let mut summaries = Vec::with_capacity(games.len());
 
     for game in games {
         let pgn_text = chess::game_to_pgn(&game);
         let saved = store
             .save_new(&game, &pgn_text)
-            .map_err(|e| HyperCroissantError::GameStoreError(e))?;
+            .map_err(|e| OropisError::GameStoreError(e))?;
         summaries.push(saved.into_summary());
     }
 

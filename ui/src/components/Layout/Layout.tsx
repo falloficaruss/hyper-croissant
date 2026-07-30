@@ -43,7 +43,7 @@ export function Layout() {
   return (
     <div className="app-layout">
       <header className="app-header">
-        <h1 className="app-title">Hyper-Croissant</h1>
+        <h1 className="app-title">Oropis</h1>
         <div className="header-actions">
           <button
             className={`coach-header-btn${coachEnabled ? " active" : ""}`}

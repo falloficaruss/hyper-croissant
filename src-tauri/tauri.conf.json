@@ -1,7 +1,7 @@
 {
-  "productName": "hyper-croissant",
+  "productName": "oropis",
   "version": "0.1.0",
-  "identifier": "com.hyper-croissant.app",
+  "identifier": "com.oropis.app",
   "build": {
     "beforeDevCommand": "",
     "devUrl": "http://localhost:5173",
@@ -11,7 +11,7 @@
   "app": {
     "windows": [
       {
-        "title": "Hyper-Croissant",
+        "title": "Oropis",
         "width": 1200,
         "height": 800
       }

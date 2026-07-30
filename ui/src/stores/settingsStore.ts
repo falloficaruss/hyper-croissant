@@ -2,7 +2,7 @@ import type { ExplanationLevel, LLMConfig, ProviderDefinition } from "../types/l
 import { BUILTIN_PROVIDERS } from "../types/llm";
 import { create } from "zustand";
 
-const STORAGE_KEY = "hyper-croissant-settings";
+const STORAGE_KEY = "oropis-settings";
 
 interface PersistedSettings {
   provider: string;

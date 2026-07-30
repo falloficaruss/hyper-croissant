@@ -1,6 +1,6 @@
-use hyper_croissant_lib::analysis;
-use hyper_croissant_lib::analysis::types::*;
-use hyper_croissant_lib::chess;
+use oropis_lib::analysis;
+use oropis_lib::analysis::types::*;
+use oropis_lib::chess;
 
 fn parse(fen: &str) -> chess::Chess {
     chess::parse_fen(fen).unwrap()
@@ -219,7 +219,7 @@ fn test_back_rank_weakness_handled_gracefully() {
 // ── Position Cache Integration ──
 #[test]
 fn test_position_cache_roundtrip() {
-    use hyper_croissant_lib::analysis::PositionCache;
+    use oropis_lib::analysis::PositionCache;
 
     let mut cache = PositionCache::new(100);
     let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";

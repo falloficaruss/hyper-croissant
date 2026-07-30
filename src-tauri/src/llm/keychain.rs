@@ -1,16 +1,16 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use crate::error::HyperCroissantError;
+use crate::error::OropisError;
 
-const SERVICE_NAME: &str = "hyper-croissant";
+const SERVICE_NAME: &str = "oropis";
 
 pub trait KeychainBackend: Send + Sync {
-    fn save(&self, provider: &str, key: &str) -> Result<(), HyperCroissantError>;
-    fn load(&self, provider: &str) -> Result<Option<String>, HyperCroissantError>;
-    fn delete(&self, provider: &str) -> Result<(), HyperCroissantError>;
+    fn save(&self, provider: &str, key: &str) -> Result<(), OropisError>;
+    fn load(&self, provider: &str) -> Result<Option<String>, OropisError>;
+    fn delete(&self, provider: &str) -> Result<(), OropisError>;
 
-    fn has(&self, provider: &str) -> Result<bool, HyperCroissantError> {
+    fn has(&self, provider: &str) -> Result<bool, OropisError> {
         Ok(self.load(provider)?.is_some())
     }
 }
@@ -18,31 +18,31 @@ pub trait KeychainBackend: Send + Sync {
 pub struct OsKeychainBackend;
 
 impl OsKeychainBackend {
-    fn entry(provider: &str) -> Result<keyring::Entry, HyperCroissantError> {
+    fn entry(provider: &str) -> Result<keyring::Entry, OropisError> {
         keyring::Entry::new(SERVICE_NAME, provider)
-            .map_err(|e| HyperCroissantError::KeychainError(e.to_string()))
+            .map_err(|e| OropisError::KeychainError(e.to_string()))
     }
 }
 
 impl KeychainBackend for OsKeychainBackend {
-    fn save(&self, provider: &str, key: &str) -> Result<(), HyperCroissantError> {
+    fn save(&self, provider: &str, key: &str) -> Result<(), OropisError> {
         Self::entry(provider)?
             .set_password(key)
-            .map_err(|e| HyperCroissantError::KeychainError(e.to_string()))
+            .map_err(|e| OropisError::KeychainError(e.to_string()))
     }
 
-    fn load(&self, provider: &str) -> Result<Option<String>, HyperCroissantError> {
+    fn load(&self, provider: &str) -> Result<Option<String>, OropisError> {
         match Self::entry(provider)?.get_password() {
             Ok(key) => Ok(Some(key)),
             Err(keyring::Error::NoEntry) => Ok(None),
-            Err(e) => Err(HyperCroissantError::KeychainError(e.to_string())),
+            Err(e) => Err(OropisError::KeychainError(e.to_string())),
         }
     }
 
-    fn delete(&self, provider: &str) -> Result<(), HyperCroissantError> {
+    fn delete(&self, provider: &str) -> Result<(), OropisError> {
         match Self::entry(provider)?.delete_credential() {
             Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-            Err(e) => Err(HyperCroissantError::KeychainError(e.to_string())),
+            Err(e) => Err(OropisError::KeychainError(e.to_string())),
         }
     }
 }
@@ -66,7 +66,7 @@ impl Default for MockKeychainBackend {
 }
 
 impl KeychainBackend for MockKeychainBackend {
-    fn save(&self, provider: &str, key: &str) -> Result<(), HyperCroissantError> {
+    fn save(&self, provider: &str, key: &str) -> Result<(), OropisError> {
         self.store
             .lock()
             .unwrap()
@@ -74,11 +74,11 @@ impl KeychainBackend for MockKeychainBackend {
         Ok(())
     }
 
-    fn load(&self, provider: &str) -> Result<Option<String>, HyperCroissantError> {
+    fn load(&self, provider: &str) -> Result<Option<String>, OropisError> {
         Ok(self.store.lock().unwrap().get(provider).cloned())
     }
 
-    fn delete(&self, provider: &str) -> Result<(), HyperCroissantError> {
+    fn delete(&self, provider: &str) -> Result<(), OropisError> {
         self.store.lock().unwrap().remove(provider);
         Ok(())
     }

@@ -15,7 +15,7 @@ use tracing::info;
 pub fn run() {
     tracing_subscriber::fmt::init();
 
-    info!("Starting Hyper-Croissant...");
+    info!("Starting Oropis...");
 
     tauri::Builder::new()
         .plugin(tauri_plugin_shell::init())
@@ -57,5 +57,5 @@ pub fn run() {
             commands::llm_chat,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running Hyper-Croissant");
+        .expect("error while running Oropis");
 }

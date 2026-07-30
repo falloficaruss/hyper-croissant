@@ -1,6 +1,6 @@
 use crate::chess::{self, MoveData, MoveResult, PositionData};
 use crate::engine::{EngineCommand, EngineConfig, EngineManager};
-use crate::error::HyperCroissantError;
+use crate::error::OropisError;
 use crate::game::{self, GameStore, SavedGame, SavedGameSummary};
 use crate::llm::{self, LlmChatRequest, LlmState};
 use tauri::ipc::Channel;
@@ -11,12 +11,12 @@ pub async fn start_engine(
     config: EngineConfig,
     manager: State<'_, EngineManager>,
     app_handle: AppHandle,
-) -> Result<(), HyperCroissantError> {
+) -> Result<(), OropisError> {
     manager.start(config, app_handle).await
 }
 
 #[tauri::command]
-pub async fn stop_engine(manager: State<'_, EngineManager>) -> Result<(), HyperCroissantError> {
+pub async fn stop_engine(manager: State<'_, EngineManager>) -> Result<(), OropisError> {
     manager.stop().await
 }
 
@@ -26,7 +26,7 @@ pub async fn go_position(
     moves: Vec<String>,
     depth: Option<u32>,
     manager: State<'_, EngineManager>,
-) -> Result<(), HyperCroissantError> {
+) -> Result<(), OropisError> {
     manager
         .send_command(EngineCommand::Position { fen, moves })
         .await?;
@@ -41,41 +41,41 @@ pub async fn go_position(
 }
 
 #[tauri::command]
-pub async fn stop_analysis(manager: State<'_, EngineManager>) -> Result<(), HyperCroissantError> {
+pub async fn stop_analysis(manager: State<'_, EngineManager>) -> Result<(), OropisError> {
     manager.send_command(EngineCommand::Stop).await
 }
 
 #[tauri::command]
-pub async fn get_legal_moves(fen: String) -> Result<Vec<MoveData>, HyperCroissantError> {
-    let pos = chess::parse_fen(&fen).map_err(HyperCroissantError::InvalidFen)?;
+pub async fn get_legal_moves(fen: String) -> Result<Vec<MoveData>, OropisError> {
+    let pos = chess::parse_fen(&fen).map_err(OropisError::InvalidFen)?;
     Ok(chess::get_legal_moves(&pos))
 }
 
 #[tauri::command]
-pub async fn validate_position(fen: String) -> Result<PositionData, HyperCroissantError> {
-    chess::get_position_data(&fen).map_err(HyperCroissantError::InvalidFen)
+pub async fn validate_position(fen: String) -> Result<PositionData, OropisError> {
+    chess::get_position_data(&fen).map_err(OropisError::InvalidFen)
 }
 
 #[tauri::command]
 pub async fn make_move_command(
     fen: String,
     uci_move: String,
-) -> Result<MoveResult, HyperCroissantError> {
-    let pos = chess::parse_fen(&fen).map_err(HyperCroissantError::InvalidFen)?;
-    chess::make_move_with_data(&pos, &uci_move).map_err(HyperCroissantError::InvalidMove)
+) -> Result<MoveResult, OropisError> {
+    let pos = chess::parse_fen(&fen).map_err(OropisError::InvalidFen)?;
+    chess::make_move_with_data(&pos, &uci_move).map_err(OropisError::InvalidMove)
 }
 
 #[tauri::command]
 pub async fn make_moves_command(
     fen: String,
     uci_moves: Vec<String>,
-) -> Result<MoveResult, HyperCroissantError> {
-    chess::make_moves_sequence(&fen, &uci_moves).map_err(HyperCroissantError::InvalidMove)
+) -> Result<MoveResult, OropisError> {
+    chess::make_moves_sequence(&fen, &uci_moves).map_err(OropisError::InvalidMove)
 }
 
 #[tauri::command]
-pub async fn get_game_from_pgn(pgn: String) -> Result<chess::GameData, HyperCroissantError> {
-    chess::pgn_to_game(&pgn).map_err(HyperCroissantError::InvalidPgn)
+pub async fn get_game_from_pgn(pgn: String) -> Result<chess::GameData, OropisError> {
+    chess::pgn_to_game(&pgn).map_err(OropisError::InvalidPgn)
 }
 
 // ── Game library (Phase 8) ──────────────────────────────────────────
@@ -85,22 +85,22 @@ pub async fn save_game(
     pgn: String,
     id: Option<i64>,
     store: State<'_, GameStore>,
-) -> Result<SavedGameSummary, HyperCroissantError> {
-    let game = chess::pgn_to_game(&pgn).map_err(HyperCroissantError::InvalidPgn)?;
+) -> Result<SavedGameSummary, OropisError> {
+    let game = chess::pgn_to_game(&pgn).map_err(OropisError::InvalidPgn)?;
     let canonical = chess::game_to_pgn(&game);
     let saved = match id {
         Some(existing_id) => store
             .update(existing_id, &game, &canonical)
             .map_err(|e| {
                 if e.contains("not found") {
-                    HyperCroissantError::GameNotFound(existing_id)
+                    OropisError::GameNotFound(existing_id)
                 } else {
-                    HyperCroissantError::GameStoreError(e)
+                    OropisError::GameStoreError(e)
                 }
             })?,
         None => store
             .save_new(&game, &canonical)
-            .map_err(HyperCroissantError::GameStoreError)?,
+            .map_err(OropisError::GameStoreError)?,
     };
     Ok(saved.into_summary())
 }
@@ -109,33 +109,33 @@ pub async fn save_game(
 pub async fn load_game(
     id: i64,
     store: State<'_, GameStore>,
-) -> Result<SavedGame, HyperCroissantError> {
+) -> Result<SavedGame, OropisError> {
     store
         .load(id)
-        .map_err(HyperCroissantError::GameStoreError)?
-        .ok_or(HyperCroissantError::GameNotFound(id))
+        .map_err(OropisError::GameStoreError)?
+        .ok_or(OropisError::GameNotFound(id))
 }
 
 #[tauri::command]
 pub async fn list_games(
     query: Option<String>,
     store: State<'_, GameStore>,
-) -> Result<Vec<SavedGameSummary>, HyperCroissantError> {
+) -> Result<Vec<SavedGameSummary>, OropisError> {
     store
         .list(query.as_deref())
-        .map_err(HyperCroissantError::GameStoreError)
+        .map_err(OropisError::GameStoreError)
 }
 
 #[tauri::command]
 pub async fn delete_game(
     id: i64,
     store: State<'_, GameStore>,
-) -> Result<(), HyperCroissantError> {
+) -> Result<(), OropisError> {
     let deleted = store
         .delete(id)
-        .map_err(HyperCroissantError::GameStoreError)?;
+        .map_err(OropisError::GameStoreError)?;
     if !deleted {
-        return Err(HyperCroissantError::GameNotFound(id));
+        return Err(OropisError::GameNotFound(id));
     }
     Ok(())
 }
@@ -144,7 +144,7 @@ pub async fn delete_game(
 pub async fn import_pgn(
     pgn: String,
     store: State<'_, GameStore>,
-) -> Result<Vec<SavedGameSummary>, HyperCroissantError> {
+) -> Result<Vec<SavedGameSummary>, OropisError> {
     game::import_pgn_text(&store, &pgn)
 }
 
@@ -152,17 +152,17 @@ pub async fn import_pgn(
 pub async fn export_pgn(
     id: i64,
     store: State<'_, GameStore>,
-) -> Result<String, HyperCroissantError> {
+) -> Result<String, OropisError> {
     let saved = store
         .load(id)
-        .map_err(HyperCroissantError::GameStoreError)?
-        .ok_or(HyperCroissantError::GameNotFound(id))?;
+        .map_err(OropisError::GameStoreError)?
+        .ok_or(OropisError::GameNotFound(id))?;
     Ok(game::saved_game_to_pgn(&saved))
 }
 
 /// Export arbitrary in-memory game data (current board session) as PGN.
 #[tauri::command]
-pub async fn game_data_to_pgn(game: chess::GameData) -> Result<String, HyperCroissantError> {
+pub async fn game_data_to_pgn(game: chess::GameData) -> Result<String, OropisError> {
     Ok(chess::game_to_pgn(&game))
 }
 
@@ -171,7 +171,7 @@ pub async fn set_engine_option(
     name: String,
     value: String,
     manager: State<'_, EngineManager>,
-) -> Result<(), HyperCroissantError> {
+) -> Result<(), OropisError> {
     manager
         .send_command(EngineCommand::SetOption { name, value })
         .await
@@ -188,8 +188,8 @@ pub async fn analyze_position_command(
     fen: String,
     engine_lines: Vec<EngineLineInfo>,
     cache: State<'_, StdMutex<PositionCache>>,
-) -> Result<StructuredAnalysis, HyperCroissantError> {
-    let pos = chess::parse_fen(&fen).map_err(HyperCroissantError::InvalidFen)?;
+) -> Result<StructuredAnalysis, OropisError> {
+    let pos = chess::parse_fen(&fen).map_err(OropisError::InvalidFen)?;
 
     // Check cache
     let norm_fen = PositionCache::normalize_fen(&fen);
@@ -230,17 +230,17 @@ pub async fn compare_moves_command(
     engine_move: String,
     user_score: Option<ScoreData>,
     engine_score: Option<ScoreData>,
-) -> Result<MoveComparison, HyperCroissantError> {
-    let pos = chess::parse_fen(&fen).map_err(HyperCroissantError::InvalidFen)?;
+) -> Result<MoveComparison, OropisError> {
+    let pos = chess::parse_fen(&fen).map_err(OropisError::InvalidFen)?;
     analysis::compare_moves(&pos, &user_move, &engine_move, user_score, engine_score)
-        .map_err(|e| HyperCroissantError::InvalidMove(e))
+        .map_err(|e| OropisError::InvalidMove(e))
 }
 
 #[tauri::command]
 pub async fn get_cached_analysis(
     fen: String,
     cache: State<'_, StdMutex<PositionCache>>,
-) -> Result<Option<CachedAnalysis>, HyperCroissantError> {
+) -> Result<Option<CachedAnalysis>, OropisError> {
     let norm_fen = PositionCache::normalize_fen(&fen);
     let cached = cache.lock().unwrap();
     Ok(cached.get(&norm_fen).cloned())
@@ -253,7 +253,7 @@ pub async fn analyze_eval_swing_command(
     eval_before: Option<ScoreData>,
     eval_after: Option<ScoreData>,
     cache: State<'_, StdMutex<PositionCache>>,
-) -> Result<EvalSwing, HyperCroissantError> {
+) -> Result<EvalSwing, OropisError> {
     // Cache hit (scores are part of the result; recompute if scores differ)
     {
         let cached = cache.lock().unwrap();
@@ -265,9 +265,9 @@ pub async fn analyze_eval_swing_command(
         }
     }
 
-    let pos = chess::parse_fen(&fen_before).map_err(HyperCroissantError::InvalidFen)?;
+    let pos = chess::parse_fen(&fen_before).map_err(OropisError::InvalidFen)?;
     let swing = analysis::analyze_eval_swing(&pos, &user_move, eval_before, eval_after)
-        .map_err(HyperCroissantError::InvalidMove)?;
+        .map_err(OropisError::InvalidMove)?;
 
     let mut cached = cache.lock().unwrap();
     cached.insert_swing(swing.clone());
@@ -279,7 +279,7 @@ pub async fn save_api_key(
     provider: String,
     key: String,
     state: State<'_, LlmState>,
-) -> Result<(), HyperCroissantError> {
+) -> Result<(), OropisError> {
     state.keychain().save(&provider, &key)
 }
 
@@ -287,7 +287,7 @@ pub async fn save_api_key(
 pub async fn load_api_key(
     provider: String,
     state: State<'_, LlmState>,
-) -> Result<Option<String>, HyperCroissantError> {
+) -> Result<Option<String>, OropisError> {
     state.keychain().load(&provider)
 }
 
@@ -295,7 +295,7 @@ pub async fn load_api_key(
 pub async fn has_api_key(
     provider: String,
     state: State<'_, LlmState>,
-) -> Result<bool, HyperCroissantError> {
+) -> Result<bool, OropisError> {
     state.keychain().has(&provider)
 }
 
@@ -303,7 +303,7 @@ pub async fn has_api_key(
 pub async fn delete_api_key(
     provider: String,
     state: State<'_, LlmState>,
-) -> Result<(), HyperCroissantError> {
+) -> Result<(), OropisError> {
     state.keychain().delete(&provider)
 }
 
@@ -312,7 +312,7 @@ pub async fn llm_chat(
     request: LlmChatRequest,
     on_chunk: Channel<String>,
     state: State<'_, LlmState>,
-) -> Result<String, HyperCroissantError> {
+) -> Result<String, OropisError> {
     let channel = if request.stream { Some(&on_chunk) } else { None };
     llm::chat(&state, &request, channel).await
 }
