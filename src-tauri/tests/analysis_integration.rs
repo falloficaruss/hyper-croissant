@@ -358,3 +358,82 @@ fn test_eval_swing_cache_key_stable() {
     assert_eq!(a.user_move, b.user_move);
     assert_eq!(a.swing_cp, b.swing_cp);
 }
+
+// ── Search Tree (Phase 9) ──
+#[test]
+fn test_search_tree_clusters_multipv() {
+    let pos = parse(chess::START_FEN);
+    let lines = vec![
+        EngineLineInfo {
+            depth: 14,
+            score: ScoreData { kind: "cp".into(), value: 35 },
+            pv: vec!["e2e4".into(), "e7e5".into(), "g1f3".into()],
+            multipv: Some(1),
+        },
+        EngineLineInfo {
+            depth: 14,
+            score: ScoreData { kind: "cp".into(), value: 28 },
+            pv: vec!["d2d4".into(), "d7d5".into()],
+            multipv: Some(2),
+        },
+        EngineLineInfo {
+            depth: 14,
+            score: ScoreData { kind: "cp".into(), value: -120 },
+            pv: vec!["a2a4".into()],
+            multipv: Some(3),
+        },
+    ];
+    let tree = analysis::build_search_tree(&pos, &lines);
+    assert_eq!(tree.depth, 14);
+    assert!(tree.clusters.len() >= 2);
+    let main = tree
+        .clusters
+        .iter()
+        .find(|c| matches!(c.category, SearchTreeCategory::Main))
+        .expect("main cluster");
+    assert_eq!(main.first_move, "e2e4");
+    assert!(main.bar_ratio >= 0.99);
+    assert!(main.why_rejected.is_empty());
+
+    let losing_or_inferior = tree.clusters.iter().any(|c| {
+        matches!(
+            c.category,
+            SearchTreeCategory::Inferior | SearchTreeCategory::Losing
+        )
+    });
+    assert!(
+        losing_or_inferior,
+        "weak a2a4 line should be inferior or losing"
+    );
+}
+
+#[test]
+fn test_search_tree_prompt_json() {
+    let pos = parse(chess::START_FEN);
+    let lines = vec![
+        EngineLineInfo {
+            depth: 10,
+            score: ScoreData { kind: "cp".into(), value: 20 },
+            pv: vec!["e2e4".into()],
+            multipv: Some(1),
+        },
+        EngineLineInfo {
+            depth: 10,
+            score: ScoreData { kind: "cp".into(), value: 10 },
+            pv: vec!["d2d4".into()],
+            multipv: Some(2),
+        },
+    ];
+    let tree = analysis::build_search_tree(&pos, &lines);
+    let cluster_id = &tree.clusters[0].id;
+    let prompt = analysis::build_search_tree_prompt(
+        &tree,
+        cluster_id,
+        &analysis::ExplanationLevel::Standard,
+        None,
+    );
+    let json = serde_json::to_string(&prompt).unwrap();
+    assert!(json.contains("explain_search_tree"));
+    assert!(json.contains("main_idea"));
+}
+

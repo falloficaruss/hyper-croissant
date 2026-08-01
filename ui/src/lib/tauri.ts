@@ -15,7 +15,9 @@ import type {
   EngineLineInfo,
   ScoreData,
   EvalSwing,
+  SearchTree,
 } from "../types/analysis";
+
 
 export const getLegalMoves = (fen: string) =>
   invoke<MoveData[]>("get_legal_moves", { fen });
@@ -104,6 +106,10 @@ export const analyzeEvalSwing = (
     evalBefore,
     evalAfter,
   });
+
+export const buildSearchTree = (fen: string, engineLines: EngineLineInfo[]) =>
+  invoke<SearchTree>("build_search_tree_command", { fen, engineLines });
+
 
 // LLM proxy + keychain (Phase 3 backend)
 export const saveApiKey = (provider: string, key: string) =>

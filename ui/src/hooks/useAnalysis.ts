@@ -13,8 +13,9 @@ interface PendingAnalysis {
 /**
  * Tracks engine evaluations per FEN and triggers eval-swing + why-not
  * comparison analysis when the user advances to a new position after a move.
- * Also fetches the strategic plan for the current position.
+ * Also fetches the strategic plan and search-tree clusters for the current position.
  */
+
 export function useAnalysis() {
   const analysisLines = useEngineStore((s) => s.analysisLines);
   const fen = useGameStore((s) => s.fen);
@@ -26,8 +27,11 @@ export function useAnalysis() {
   const analyzeSwing = useAnalysisStore((s) => s.analyzeSwing);
   const analyzeComparison = useAnalysisStore((s) => s.analyzeComparison);
   const analyzePlan = useAnalysisStore((s) => s.analyzePlan);
+  const analyzeSearchTree = useAnalysisStore((s) => s.analyzeSearchTree);
   const clearAnalysisCards = useAnalysisStore((s) => s.clearAnalysisCards);
   const clearPlan = useAnalysisStore((s) => s.clearPlan);
+  const clearSearchTree = useAnalysisStore((s) => s.clearSearchTree);
+
   const getEval = useAnalysisStore((s) => s.getEval);
   const getBestMove = useAnalysisStore((s) => s.getBestMove);
   const afterEval = useAnalysisStore((s) => s.evalByFen[fen]);
@@ -47,10 +51,11 @@ export function useAnalysis() {
     }
   }, [analysisLines, fen, recordEval, recordBestMove]);
 
-  // Clear plan when position changes (new fetch will repopulate once engine reports)
+  // Clear plan + search tree when position changes
   useEffect(() => {
     clearPlan();
-  }, [fen, clearPlan]);
+    clearSearchTree();
+  }, [fen, clearPlan, clearSearchTree]);
 
   // Fetch plan once engine has produced lines for the current position
   useEffect(() => {
@@ -59,6 +64,14 @@ export function useAnalysis() {
     if (!getEval(fen)) return;
     void analyzePlan({ fen, engineLines: analysisLines });
   }, [fen, analysisLines, analyzePlan, getEval]);
+
+  // Build search tree once multi-PV lines are available
+  useEffect(() => {
+    if (analysisLines.length < 2) return;
+    if (!getEval(fen)) return;
+    void analyzeSearchTree({ fen, engineLines: analysisLines });
+  }, [fen, analysisLines, analyzeSearchTree, getEval]);
+
 
   // When the position changes due to a move (index increased), run analyses
   useEffect(() => {

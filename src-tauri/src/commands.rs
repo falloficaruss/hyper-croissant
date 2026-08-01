@@ -180,8 +180,9 @@ pub async fn set_engine_option(
 use std::sync::Mutex as StdMutex;
 use crate::analysis::{
     self, CachedAnalysis, EngineLineInfo, EvalSwing, MoveComparison, PositionCache, ScoreData,
-    StructuredAnalysis,
+    SearchTree, StructuredAnalysis,
 };
+
 
 #[tauri::command]
 pub async fn analyze_position_command(
@@ -272,6 +273,27 @@ pub async fn analyze_eval_swing_command(
     let mut cached = cache.lock().unwrap();
     cached.insert_swing(swing.clone());
     Ok(swing)
+}
+
+#[tauri::command]
+pub async fn build_search_tree_command(
+    fen: String,
+    engine_lines: Vec<EngineLineInfo>,
+    cache: State<'_, StdMutex<PositionCache>>,
+) -> Result<SearchTree, OropisError> {
+    {
+        let cached = cache.lock().unwrap();
+        if let Some(tree) = cached.get_tree(&fen, &engine_lines) {
+            return Ok(tree.clone());
+        }
+    }
+
+    let pos = chess::parse_fen(&fen).map_err(OropisError::InvalidFen)?;
+    let tree = analysis::build_search_tree(&pos, &engine_lines);
+
+    let mut cached = cache.lock().unwrap();
+    cached.insert_tree(&fen, &engine_lines, tree.clone());
+    Ok(tree)
 }
 
 #[tauri::command]

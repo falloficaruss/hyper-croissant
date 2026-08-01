@@ -7,6 +7,7 @@ import type {
   MoveComparison,
   PlanSkeleton,
   ScoreData,
+  SearchTree,
   SwingSeverity,
 } from "../types/analysis";
 import type { AnalysisLine, Score } from "../types/engine";
@@ -20,6 +21,10 @@ export const COMPARISON_DISPLAY_THRESHOLD_CP = 30;
 
 /** Minimum engine depth before we request a plan for the position. */
 export const PLAN_MIN_DEPTH = 8;
+
+/** Minimum engine depth / line count before building a search tree. */
+export const SEARCH_TREE_MIN_DEPTH = 8;
+export const SEARCH_TREE_MIN_LINES = 2;
 
 interface PositionEval {
   fen: string;
@@ -71,6 +76,15 @@ interface AnalysisState {
   /** FEN currently being (or last successfully) planned — avoids duplicate fetches. */
   planFen: string | null;
 
+  /** Search tree for the active position (multi-PV idea clusters). */
+  currentSearchTree: SearchTree | null;
+  searchTreeLoading: boolean;
+  searchTreeError: string | null;
+  /** Per-cluster LLM explanations keyed by cluster id. */
+  searchTreeExplanations: Record<string, string>;
+  searchTreeExplainingId: string | null;
+  searchTreeFen: string | null;
+
   recordEval: (fen: string, score: Score, depth: number) => void;
   recordBestMove: (fen: string, uci: string, score: Score, depth: number) => void;
   getEval: (fen: string) => PositionEval | undefined;
@@ -90,9 +104,14 @@ interface AnalysisState {
     fen: string;
     engineLines: AnalysisLine[];
   }) => Promise<void>;
+  analyzeSearchTree: (params: {
+    fen: string;
+    engineLines: AnalysisLine[];
+  }) => Promise<void>;
   clearSwing: () => void;
   clearComparison: () => void;
   clearPlan: () => void;
+  clearSearchTree: () => void;
   clearAnalysisCards: () => void;
   setSwingExplanation: (text: string | null) => void;
   setSwingExplaining: (v: boolean) => void;
@@ -103,6 +122,9 @@ interface AnalysisState {
   setPlanExplanation: (text: string | null) => void;
   setPlanExplaining: (v: boolean) => void;
   dismissPlan: () => void;
+  setSearchTreeExplanation: (clusterId: string, text: string | null) => void;
+  setSearchTreeExplainingId: (id: string | null) => void;
+  dismissSearchTree: () => void;
 }
 
 function scoreToData(score: Score): ScoreData {
@@ -183,6 +205,12 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
   planExplanation: null,
   planExplaining: false,
   planFen: null,
+  currentSearchTree: null,
+  searchTreeLoading: false,
+  searchTreeError: null,
+  searchTreeExplanations: {},
+  searchTreeExplainingId: null,
+  searchTreeFen: null,
 
   recordEval: (fen, score, depth) => {
     const existing = get().evalByFen[fen];
@@ -335,6 +363,51 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
     }
   },
 
+  analyzeSearchTree: async ({ fen, engineLines }) => {
+    if (engineLines.length < SEARCH_TREE_MIN_LINES) return;
+
+    const top = engineLines.find((l) => l.multipv === 1) ?? engineLines[0];
+    if (!top || top.depth < SEARCH_TREE_MIN_DEPTH) return;
+
+    const { searchTreeFen, searchTreeLoading, currentSearchTree } = get();
+    if (searchTreeFen === fen && (currentSearchTree !== null || searchTreeLoading)) {
+      // Allow refresh when depth improved significantly on the same FEN.
+      const existingDepth = currentSearchTree?.depth ?? 0;
+      if (top.depth <= existingDepth + 1) return;
+    }
+
+    set({
+      searchTreeLoading: true,
+      searchTreeError: null,
+      searchTreeFen: fen,
+    });
+
+    try {
+      const tree = await tauri.buildSearchTree(fen, analysisLinesToEngineInfo(engineLines));
+      if (get().searchTreeFen !== fen) return;
+
+      if (!tree.clusters.length) {
+        set({ currentSearchTree: null, searchTreeLoading: false });
+        return;
+      }
+
+      set({
+        currentSearchTree: tree,
+        searchTreeLoading: false,
+        searchTreeExplanations:
+          get().searchTreeFen === fen ? get().searchTreeExplanations : {},
+      });
+    } catch (err) {
+      if (get().searchTreeFen !== fen) return;
+      const message = err instanceof Error ? err.message : "Failed to build search tree";
+      set({
+        searchTreeLoading: false,
+        searchTreeError: message,
+        currentSearchTree: null,
+      });
+    }
+  },
+
   clearSwing: () =>
     set({
       currentSwing: null,
@@ -361,6 +434,16 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
       planFen: null,
     }),
 
+  clearSearchTree: () =>
+    set({
+      currentSearchTree: null,
+      searchTreeError: null,
+      searchTreeExplanations: {},
+      searchTreeExplainingId: null,
+      searchTreeLoading: false,
+      searchTreeFen: null,
+    }),
+
   clearAnalysisCards: () =>
     set({
       currentSwing: null,
@@ -371,7 +454,7 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
       comparisonError: null,
       comparisonExplanation: null,
       comparisonExplaining: false,
-      // Keep plan — it is position-scoped, not move-scoped
+      // Keep plan + search tree — they are position-scoped, not move-scoped
     }),
 
   setSwingExplanation: (text) => set({ swingExplanation: text }),
@@ -410,5 +493,32 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
       planError: null,
       planLoading: false,
       planFen: null,
+    }),
+
+  setSearchTreeExplanation: (clusterId, text) =>
+    set((s) => {
+      if (text === null) {
+        const next = { ...s.searchTreeExplanations };
+        delete next[clusterId];
+        return { searchTreeExplanations: next };
+      }
+      return {
+        searchTreeExplanations: {
+          ...s.searchTreeExplanations,
+          [clusterId]: text,
+        },
+      };
+    }),
+
+  setSearchTreeExplainingId: (id) => set({ searchTreeExplainingId: id }),
+
+  dismissSearchTree: () =>
+    set({
+      currentSearchTree: null,
+      searchTreeExplanations: {},
+      searchTreeExplainingId: null,
+      searchTreeError: null,
+      searchTreeLoading: false,
+      searchTreeFen: null,
     }),
 }));

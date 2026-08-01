@@ -233,3 +233,44 @@ export interface CachedAnalysis {
   concepts: ConceptEvaluation;
   tactics: TacticalMotif[];
 }
+
+// ── Search Tree (Phase 9) ──
+
+export type SearchTreeCategory = "main" | "alternative" | "inferior" | "losing";
+
+export interface SearchTreeLine {
+  multipv: number;
+  depth: number;
+  score: ScoreData;
+  score_cp: number | null;
+  pv: string[];
+  pv_san: string[];
+  first_move: string;
+  first_move_san: string | null;
+}
+
+export interface SearchTreeCluster {
+  id: string;
+  label: string;
+  category: SearchTreeCategory;
+  first_move: string;
+  first_move_san: string | null;
+  best_score: ScoreData;
+  best_score_cp: number | null;
+  /** Gap from best line in cp (mover perspective; positive = worse). */
+  eval_gap_cp: number | null;
+  win_percent: number;
+  bar_ratio: number;
+  lines: SearchTreeLine[];
+  ideas: string[];
+  why_rejected: string[];
+  summary: string;
+}
+
+export interface SearchTree {
+  fen: string;
+  depth: number;
+  best_score: ScoreData | null;
+  best_score_cp: number | null;
+  clusters: SearchTreeCluster[];
+}

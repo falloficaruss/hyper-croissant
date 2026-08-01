@@ -11,6 +11,8 @@ import { EngineControls } from "../Analysis/EngineControls";
 import { EvalSwingCard } from "../Analysis/EvalSwingCard";
 import { ComparisonCard } from "../Analysis/ComparisonCard";
 import { PlanCard } from "../Analysis/PlanCard";
+import { SearchTreeView } from "../Analysis/SearchTreeView";
+
 import { ExplanationPanel } from "../LLM/ExplanationPanel";
 import { CoachMode } from "../Coach/CoachMode";
 import { useGameStore } from "../../stores/gameStore";
@@ -39,6 +41,13 @@ export function Layout() {
   const hasPlan = useAnalysisStore(
     (s) => s.currentPlan !== null || s.planLoading || s.planError !== null,
   );
+  const hasSearchTree = useAnalysisStore(
+    (s) =>
+      s.currentSearchTree !== null ||
+      s.searchTreeLoading ||
+      s.searchTreeError !== null,
+  );
+
 
   return (
     <div className="app-layout">
@@ -104,6 +113,11 @@ export function Layout() {
           {!hideAnalysis && hasPlan && (
             <div className="sidebar-section">
               <PlanCard />
+            </div>
+          )}
+          {!hideAnalysis && hasSearchTree && (
+            <div className="sidebar-section">
+              <SearchTreeView />
             </div>
           )}
           {!hideAnalysis && (

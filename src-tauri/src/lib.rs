@@ -43,6 +43,7 @@ pub fn run() {
             commands::compare_moves_command,
             commands::get_cached_analysis,
             commands::analyze_eval_swing_command,
+            commands::build_search_tree_command,
             commands::save_game,
             commands::load_game,
             commands::list_games,

@@ -8,6 +8,7 @@ mod eval_swing;
 mod prompt_builder;
 mod validator;
 mod position_cache;
+mod search_tree;
 
 pub use types::*;
 pub use feature_extractor::extract_features;
@@ -16,12 +17,12 @@ pub use tactics::detect_tactics;
 pub use comparison::{compare_moves, is_significant_comparison, COMPARISON_THRESHOLD_CP};
 pub use eval_swing::{analyze_eval_swing, SWING_THRESHOLD_CP};
 pub use prompt_builder::{
-    build_analysis_prompt, build_coach_prompt, build_comparison_prompt, build_swing_prompt,
-    CoachHistoryEntry, ExplanationLevel,
+    build_analysis_prompt, build_coach_prompt, build_comparison_prompt, build_search_tree_prompt,
+    build_swing_prompt, CoachHistoryEntry, ExplanationLevel,
 };
 pub use validator::validate_llm_output;
 pub use position_cache::PositionCache;
-
+pub use search_tree::{build_search_tree, SEARCH_TREE_MIN_LINES};
 use shakmaty::Chess;
 
 /// Run the full analysis pipeline: features → concepts + tactics

@@ -284,3 +284,56 @@ pub struct CachedAnalysis {
     pub concepts: ConceptEvaluation,
     pub tactics: Vec<TacticalMotif>,
 }
+
+// ── Search Tree (Phase 9) ──
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SearchTreeCategory {
+    Main,
+    Alternative,
+    Inferior,
+    Losing,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchTreeLine {
+    pub multipv: u32,
+    pub depth: u32,
+    pub score: ScoreData,
+    pub score_cp: Option<i32>,
+    pub pv: Vec<String>,
+    pub pv_san: Vec<String>,
+    pub first_move: String,
+    pub first_move_san: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchTreeCluster {
+    pub id: String,
+    pub label: String,
+    pub category: SearchTreeCategory,
+    pub first_move: String,
+    pub first_move_san: Option<String>,
+    pub best_score: ScoreData,
+    pub best_score_cp: Option<i32>,
+    /// Gap from the best line in cp from the side-to-move's perspective (positive = worse).
+    pub eval_gap_cp: Option<i32>,
+    /// White win probability 0–100 derived from the cluster score.
+    pub win_percent: f64,
+    /// Relative bar width 0–1 (main idea ≈ 1.0).
+    pub bar_ratio: f64,
+    pub lines: Vec<SearchTreeLine>,
+    pub ideas: Vec<String>,
+    pub why_rejected: Vec<String>,
+    pub summary: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchTree {
+    pub fen: String,
+    pub depth: u32,
+    pub best_score: Option<ScoreData>,
+    pub best_score_cp: Option<i32>,
+    pub clusters: Vec<SearchTreeCluster>,
+}

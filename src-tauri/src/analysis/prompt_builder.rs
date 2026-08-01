@@ -137,6 +137,61 @@ pub fn build_swing_prompt(
     })
 }
 
+/// Build a structured JSON prompt for explaining a search-tree cluster
+/// (why the engine preferred the main idea over a rejected line).
+pub fn build_search_tree_prompt(
+    tree: &SearchTree,
+    cluster_id: &str,
+    level: &ExplanationLevel,
+    user_question: Option<&str>,
+) -> Value {
+    let cluster = tree.clusters.iter().find(|c| c.id == cluster_id);
+    let main = tree
+        .clusters
+        .iter()
+        .find(|c| matches!(c.category, SearchTreeCategory::Main));
+
+    json!({
+        "type": "explain_search_tree",
+        "explanation_level": level.as_str(),
+        "user_question": user_question.unwrap_or(
+            "Why did the engine prefer the main idea over this line?"
+        ),
+        "position_fen": tree.fen,
+        "depth": tree.depth,
+        "main_idea": main.map(|c| json!({
+            "label": c.label,
+            "first_move": c.first_move,
+            "first_move_san": c.first_move_san,
+            "score": format_score_data(&c.best_score),
+            "ideas": c.ideas,
+            "summary": c.summary,
+            "pv_san": c.lines.first().map(|l| &l.pv_san),
+        })),
+        "cluster": cluster.map(|c| json!({
+            "id": c.id,
+            "label": c.label,
+            "category": c.category,
+            "first_move": c.first_move,
+            "first_move_san": c.first_move_san,
+            "score": format_score_data(&c.best_score),
+            "eval_gap_cp": c.eval_gap_cp,
+            "ideas": c.ideas,
+            "why_rejected": c.why_rejected,
+            "summary": c.summary,
+            "pv_san": c.lines.first().map(|l| &l.pv_san),
+        })),
+        "all_clusters": tree.clusters.iter().map(|c| json!({
+            "id": c.id,
+            "label": c.label,
+            "category": c.category,
+            "first_move_san": c.first_move_san,
+            "score": format_score_data(&c.best_score),
+            "eval_gap_cp": c.eval_gap_cp,
+        })).collect::<Vec<_>>(),
+    })
+}
+
 fn format_score_data(score: &ScoreData) -> String {
     if score.kind == "cp" {
         let val = score.value as f64 / 100.0;
