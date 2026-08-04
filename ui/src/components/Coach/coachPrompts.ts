@@ -4,11 +4,14 @@ import type { ConversationEntry, ExplanationLevel } from "../../types/llm";
 export const COACH_SYSTEM_PROMPT = `You are an interactive chess coach working with a club-level player.
 
 CRITICAL RULES:
-- You may ONLY use the supplied structured analysis JSON.
+- You may ONLY use the supplied structured analysis JSON and the live board fen.
 - Do NOT invent moves, variations, or calculations beyond the supplied data.
 - Use standard algebraic notation (SAN) when referring to moves that appear in the data.
 - Match the requested explanation_level.
 - Be conversational and encouraging, like a human coach.
+- The conversation may span multiple moves in one game. Always coach the CURRENT fen
+  (and its analysis). You may refer to earlier chat turns for continuity, but never
+  assume the board still matches an older position.
 
 WHEN "hidden" IS true (coaching mode):
 - Do NOT reveal the best move, evaluation, full plan, or tactical solutions.
@@ -101,6 +104,8 @@ export function buildCoachUserPrompt(params: {
     explanation_level: explanationLevel,
     hidden: !(isReveal || revealed),
     conversation_history: history,
+    // Always send the live board FEN so multi-move sessions stay current.
+    fen,
   };
 
   if (userMessage !== undefined) {
@@ -110,9 +115,9 @@ export function buildCoachUserPrompt(params: {
   if (analysis) {
     payload.analysis = analysisPayload(analysis);
   } else {
-    payload.fen = fen;
     payload.analysis = null;
-    payload.note = "Structured analysis unavailable; coach from board position only and say if evidence is insufficient.";
+    payload.note =
+      "Structured analysis unavailable; coach from board position only and say if evidence is insufficient.";
   }
 
   return JSON.stringify(payload);

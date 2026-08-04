@@ -14,10 +14,12 @@ import { PlanCard } from "../Analysis/PlanCard";
 import { SearchTreeView } from "../Analysis/SearchTreeView";
 
 import { ExplanationPanel } from "../LLM/ExplanationPanel";
+import { LLMSettings } from "../LLM/LLMSettings";
 import { CoachMode } from "../Coach/CoachMode";
 import { useGameStore } from "../../stores/gameStore";
 import { useAnalysisStore } from "../../stores/analysisStore";
 import { useCoachStore } from "../../stores/coachStore";
+import { useSettingsStore } from "../../stores/settingsStore";
 import "./Layout.css";
 
 export function Layout() {
@@ -25,6 +27,7 @@ export function Layout() {
   const coachEnabled = useCoachStore((s) => s.enabled);
   const coachPhase = useCoachStore((s) => s.phase);
   const setCoachEnabled = useCoachStore((s) => s.setEnabled);
+  const setSettingsOpen = useSettingsStore((s) => s.setSettingsOpen);
 
   // Hide spoilers while coaching (until answer is revealed)
   const hideAnalysis = coachEnabled && coachPhase !== "revealed";
@@ -54,6 +57,14 @@ export function Layout() {
       <header className="app-header">
         <h1 className="app-title">Oropis</h1>
         <div className="header-actions">
+          <button
+            className="settings-header-btn"
+            onClick={() => setSettingsOpen(true)}
+            title="LLM Settings — provider, API key, model"
+            type="button"
+          >
+            Settings
+          </button>
           <button
             className={`coach-header-btn${coachEnabled ? " active" : ""}`}
             onClick={() => setCoachEnabled(!coachEnabled)}
@@ -136,6 +147,7 @@ export function Layout() {
           </div>
         </aside>
       </main>
+      <LLMSettings />
     </div>
   );
 }

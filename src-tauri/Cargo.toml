@@ -44,7 +44,7 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 futures-util = { version = "0.3", default-features = false }
 
 [build-dependencies]
-tauri-build = "2.0.0"
+tauri-build = { version = "2.0.0", features = [] }
 
 [features]
 default = []

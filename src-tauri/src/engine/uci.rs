@@ -25,7 +25,7 @@ pub enum EngineCommand {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
+#[serde(tag = "type", content = "value")]
 pub enum Score {
     Cp(i32),
     Mate(i32),
@@ -59,12 +59,13 @@ pub struct UciEngine {
 
 impl UciEngine {
     pub async fn new(config: EngineConfig) -> Result<(Self, mpsc::UnboundedReceiver<EngineOutput>), OropisError> {
-        let mut child = Command::new(&config.path)
+        let path = expand_engine_path(&config.path);
+        let mut child = Command::new(&path)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .map_err(|e| OropisError::EngineNotFound(format!("{}: {}", config.path, e)))?;
+            .map_err(|e| OropisError::EngineNotFound(format!("{path}: {e}")))?;
 
         let stdin = child.stdin.take().ok_or_else(|| OropisError::IoError("Failed to open stdin".into()))?;
         let stdout = child.stdout.take().ok_or_else(|| OropisError::IoError("Failed to open stdout".into()))?;
@@ -134,6 +135,20 @@ impl UciEngine {
 
         self.tx.send(cmd_str).map_err(|_| OropisError::ChannelClosed)
     }
+}
+
+/// Expand `~/...` to the user's home directory. Other paths are returned as-is.
+fn expand_engine_path(path: &str) -> String {
+    if let Some(rest) = path.strip_prefix("~/") {
+        if let Some(home) = std::env::var_os("HOME") {
+            return std::path::Path::new(&home).join(rest).display().to_string();
+        }
+    } else if path == "~" {
+        if let Some(home) = std::env::var_os("HOME") {
+            return home.to_string_lossy().into_owned();
+        }
+    }
+    path.to_string()
 }
 
 fn parse_uci_line(line: &str) -> Option<EngineOutput> {

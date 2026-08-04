@@ -1,3 +1,4 @@
+import "./App.css";
 import { Layout } from "./components/Layout/Layout";
 import { useGame } from "./hooks/useGame";
 import { useEngine } from "./hooks/useEngine";

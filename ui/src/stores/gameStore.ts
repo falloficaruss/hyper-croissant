@@ -5,6 +5,10 @@ import { create } from "zustand";
 
 const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+function newBoardSessionId(): string {
+  return `board-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function algToIndex(sq: string): number {
   const file = sq.charCodeAt(0) - 97;
   const rank = parseInt(sq[1]) - 1;
@@ -86,6 +90,12 @@ interface GameState {
   error: string | null;
   lastMove: { from: string; to: string } | null;
 
+  /**
+   * Increments whenever the board is replaced (new game, load PGN/FEN/saved).
+   * Coach mode keys chat sessions on this so moves within a game keep one chat.
+   */
+  boardSessionId: string;
+
   /** ID of the currently loaded library game, if any. */
   savedGameId: number | null;
   /** True when the session differs from the last saved snapshot. */
@@ -155,6 +165,8 @@ export const useGameStore = create<GameState>((set, get) => {
     error: null,
     lastMove: null,
 
+    boardSessionId: newBoardSessionId(),
+
     savedGameId: null,
     isDirty: false,
 
@@ -187,6 +199,7 @@ export const useGameStore = create<GameState>((set, get) => {
           isLoading: false,
           savedGameId: null,
           isDirty: true,
+          boardSessionId: newBoardSessionId(),
           ...deriveState(chess),
         });
       } catch (err) {
@@ -206,6 +219,7 @@ export const useGameStore = create<GameState>((set, get) => {
           error: null,
           savedGameId: null,
           isDirty: true,
+          boardSessionId: newBoardSessionId(),
           ...deriveState(chess),
         });
       } catch {
@@ -222,6 +236,7 @@ export const useGameStore = create<GameState>((set, get) => {
         error: null,
         savedGameId: null,
         isDirty: false,
+        boardSessionId: newBoardSessionId(),
         ...deriveState(chess),
       });
     },
@@ -229,21 +244,29 @@ export const useGameStore = create<GameState>((set, get) => {
     makeMove: (from: string, to: string, promotion?: string) => {
       const { moves, currentMoveIndex, gameData } = get();
       try {
-        const truncated = moves.slice(0, currentMoveIndex + 1);
-        const initialFen = gameData?.initial_fen ?? START_FEN;
+        const atTip = currentMoveIndex === moves.length - 1;
+        let baseMoves = moves;
 
-        applyGameToChess(chess, initialFen, truncated, truncated.length - 1);
+        // Only rebuild the chess.js position when branching from history.
+        // At the tip the in-memory board is already current (O(1) vs O(n)).
+        if (!atTip) {
+          baseMoves = moves.slice(0, currentMoveIndex + 1);
+          const initialFen = gameData?.initial_fen ?? START_FEN;
+          applyGameToChess(chess, initialFen, baseMoves, baseMoves.length - 1);
+        }
 
         const cm = chess.move({ from, to, promotion });
         const moveData = chessJsMoveToMoveData(chess, cm);
-        const newMoves = [...truncated, moveData];
+        const newMoves = [...baseMoves, moveData];
         const headers = gameData?.headers ?? emptyHeaders();
+        const initialFen = gameData?.initial_fen ?? START_FEN;
 
         set({
           moves: newMoves,
           currentMoveIndex: newMoves.length - 1,
           gameData: buildGameData(headers, initialFen, newMoves, chess.fen()),
           isDirty: true,
+          error: null,
           ...deriveState(chess),
         });
       } catch {
@@ -391,6 +414,7 @@ export const useGameStore = create<GameState>((set, get) => {
           isLoading: false,
           savedGameId: id,
           isDirty: false,
+          boardSessionId: newBoardSessionId(),
           ...deriveState(chess),
         });
       } catch (err) {

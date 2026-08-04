@@ -11,6 +11,7 @@ use super::keychain::{KeychainBackend, OsKeychainBackend};
 
 const PROVIDER_OPENAI: &str = "openai";
 const PROVIDER_ANTHROPIC: &str = "anthropic";
+const PROVIDER_GEMINI: &str = "gemini";
 const PROVIDER_OLLAMA: &str = "ollama";
 
 const ANTHROPIC_VERSION: &str = "2023-06-01";
@@ -70,13 +71,17 @@ pub fn default_base_url(provider: &str) -> &'static str {
     match provider {
         PROVIDER_OPENAI => "https://api.openai.com/v1",
         PROVIDER_ANTHROPIC => "https://api.anthropic.com/v1",
+        PROVIDER_GEMINI => "https://generativelanguage.googleapis.com/v1beta/openai",
         PROVIDER_OLLAMA => "http://localhost:11434",
         _ => "",
     }
 }
 
 fn provider_needs_key(provider: &str) -> bool {
-    matches!(provider, PROVIDER_OPENAI | PROVIDER_ANTHROPIC)
+    matches!(
+        provider,
+        PROVIDER_OPENAI | PROVIDER_ANTHROPIC | PROVIDER_GEMINI
+    )
 }
 
 fn build_request_body(request: &LlmChatRequest, stream: bool) -> Value {
@@ -246,7 +251,7 @@ fn extract_sse_payloads(event: &str) -> Vec<String> {
 
 fn parse_frame(provider: &str, payload: &str) -> Option<String> {
     match provider {
-        PROVIDER_OPENAI => parse_openai_delta(payload),
+        PROVIDER_OPENAI | PROVIDER_GEMINI => parse_openai_delta(payload),
         PROVIDER_ANTHROPIC => parse_anthropic_delta(payload),
         PROVIDER_OLLAMA => parse_ollama_delta(payload),
         _ => None,
@@ -331,6 +336,10 @@ mod tests {
     fn test_default_base_urls() {
         assert_eq!(default_base_url("openai"), "https://api.openai.com/v1");
         assert_eq!(default_base_url("anthropic"), "https://api.anthropic.com/v1");
+        assert_eq!(
+            default_base_url("gemini"),
+            "https://generativelanguage.googleapis.com/v1beta/openai"
+        );
         assert_eq!(default_base_url("ollama"), "http://localhost:11434");
     }
 
@@ -375,6 +384,13 @@ mod tests {
             "https://api.anthropic.com/v1/messages"
         );
         assert_eq!(
+            endpoint_url(
+                "gemini",
+                "https://generativelanguage.googleapis.com/v1beta/openai"
+            ),
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+        );
+        assert_eq!(
             endpoint_url("ollama", "http://localhost:11434"),
             "http://localhost:11434/api/chat"
         );
@@ -389,6 +405,19 @@ mod tests {
         )
         .to_string();
         let deltas = drain_frames("openai", &mut buffer);
+        assert_eq!(deltas, vec!["Hello".to_string(), " world".to_string()]);
+        assert!(buffer.is_empty());
+    }
+
+    #[test]
+    fn test_parse_gemini_sse_stream() {
+        let mut buffer = concat!(
+            "data: {\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}\n\n",
+            "data: {\"choices\":[{\"delta\":{\"content\":\" world\"}}]}\n\n",
+            "data: [DONE]\n\n"
+        )
+        .to_string();
+        let deltas = drain_frames("gemini", &mut buffer);
         assert_eq!(deltas, vec!["Hello".to_string(), " world".to_string()]);
         assert!(buffer.is_empty());
     }

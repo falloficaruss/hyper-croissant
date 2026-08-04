@@ -1,12 +1,14 @@
 import type { LLMConfig, LLMProviderImpl } from "../../types/llm";
 import { createOpenAIProvider } from "./openai";
 import { createAnthropicProvider } from "./anthropic";
+import { createGeminiProvider } from "./gemini";
 import { createOllamaProvider } from "./ollama";
 import { createProxyProvider } from "./proxy";
 
 const providerFactories: Record<string, () => LLMProviderImpl> = {
   openai: createOpenAIProvider,
   anthropic: createAnthropicProvider,
+  gemini: createGeminiProvider,
   ollama: createOllamaProvider,
 };
 
@@ -35,4 +37,5 @@ export function resolveProvider(config: LLMConfig): LLMProviderImpl {
 
 export { createOpenAIProvider } from "./openai";
 export { createAnthropicProvider } from "./anthropic";
+export { createGeminiProvider } from "./gemini";
 export { createOllamaProvider } from "./ollama";

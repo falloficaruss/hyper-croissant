@@ -43,14 +43,16 @@ export function CoachMode() {
   const appendEntry = useCoachStore((s) => s.appendEntry);
   const updateLastAssistant = useCoachStore((s) => s.updateLastAssistant);
   const setAnalysis = useCoachStore((s) => s.setAnalysis);
+  const updatePosition = useCoachStore((s) => s.updatePosition);
   const revealAnswer = useCoachStore((s) => s.revealAnswer);
   const endSession = useCoachStore((s) => s.endSession);
-  const onPositionChange = useCoachStore((s) => s.onPositionChange);
+  const onBoardSessionChange = useCoachStore((s) => s.onBoardSessionChange);
   const setStreaming = useCoachStore((s) => s.setStreaming);
   const setAnalyzing = useCoachStore((s) => s.setAnalyzing);
   const setError = useCoachStore((s) => s.setError);
 
   const fen = useGameStore((s) => s.fen);
+  const boardSessionId = useGameStore((s) => s.boardSessionId);
   const engineLines = useEngineStore((s) => s.analysisLines);
   const engineRunning = useEngineStore((s) => s.engineRunning);
 
@@ -62,19 +64,35 @@ export function CoachMode() {
 
   const [input, setInput] = useState("");
   const abortRef = useRef<AbortController | null>(null);
+  const boardSessionRef = useRef(boardSessionId);
   const fenRef = useRef(fen);
 
-  // Reset session context when position changes
+  // New game / load PGN|FEN|saved → archive chat and start a fresh coach shell.
   useEffect(() => {
-    if (fenRef.current !== fen) {
+    if (boardSessionRef.current !== boardSessionId) {
+      boardSessionRef.current = boardSessionId;
       fenRef.current = fen;
       abortRef.current?.abort();
       setStreaming(false);
       setAnalyzing(false);
       setInput("");
-      onPositionChange(fen);
+      onBoardSessionChange(boardSessionId);
     }
-  }, [fen, onPositionChange, setStreaming, setAnalyzing]);
+  }, [boardSessionId, fen, onBoardSessionChange, setStreaming, setAnalyzing]);
+
+  // Moves / navigation within the same board session keep the chat.
+  // Only refresh the live FEN (and clear stale analysis so the next turn re-fetches).
+  useEffect(() => {
+    if (fenRef.current === fen) return;
+    fenRef.current = fen;
+
+    const sess = useCoachStore.getState().session;
+    if (!sess || sess.boardSessionId !== boardSessionId) return;
+
+    // Don't kill an in-flight reply mid-stream on a move — let it finish.
+    // Position context for the *next* user turn will use the new FEN.
+    updatePosition(fen, null);
+  }, [fen, boardSessionId, updatePosition]);
 
   useEffect(() => {
     return () => {
@@ -124,6 +142,9 @@ export function CoachMode() {
           ? opts.analysisOverride
           : (current?.analysis ?? null);
 
+      // Prefer the live board FEN over a stale session.fen.
+      const liveFen = useGameStore.getState().fen;
+
       setStreaming(true);
       setError(null);
 
@@ -137,17 +158,25 @@ export function CoachMode() {
         setInput("");
       }
 
-      // Refresh analysis if missing
-      if (!analysis) {
+      // Always refresh structured analysis for the current board position.
+      // Analysis is position-scoped; chat history is session-scoped.
+      if (opts.analysisOverride === undefined) {
         setAnalyzing(true);
         analysis = await fetchAnalysis();
         setAnalyzing(false);
-        if (analysis) setAnalysis(analysis);
+        if (analysis) {
+          setAnalysis(analysis);
+          updatePosition(liveFen, analysis);
+        } else {
+          updatePosition(liveFen, null);
+        }
+      } else if (analysis) {
+        updatePosition(liveFen, analysis);
       }
 
       const promptJson = buildCoachUserPrompt({
         analysis,
-        fen,
+        fen: liveFen,
         explanationLevel,
         entries: opts.userMessage
           ? [
@@ -233,11 +262,11 @@ export function CoachMode() {
     [
       ensureApiKey,
       getLLMConfig,
-      fen,
       explanationLevel,
       appendEntry,
       updateLastAssistant,
       setAnalysis,
+      updatePosition,
       setAnalyzing,
       setStreaming,
       setError,
@@ -253,7 +282,8 @@ export function CoachMode() {
     const analysis = await fetchAnalysis();
     setAnalyzing(false);
 
-    startSession(fen, analysis);
+    const { boardSessionId: sid, fen: liveFen } = useGameStore.getState();
+    startSession(sid, liveFen, analysis);
 
     // If resuming a session with history, don't re-ask opening question
     const sess = useCoachStore.getState().session;
@@ -263,7 +293,6 @@ export function CoachMode() {
   }, [
     ensureApiKey,
     fetchAnalysis,
-    fen,
     startSession,
     runCoachTurn,
     setAnalyzing,
@@ -321,8 +350,8 @@ export function CoachMode() {
           </button>
         </div>
         <p className="coach-mode-hint">
-          Hide engine lines and work through the position with a coach who asks
-          before revealing.
+          Hide engine lines and work through the game with a coach. Chat stays
+          open as you move; New Game or loading a position starts a new session.
         </p>
       </div>
     );
@@ -365,9 +394,15 @@ export function CoachMode() {
         </div>
       )}
 
+      {phase === "coaching" && (
+        <div className="coach-mode-banner coach-mode-banner-ok">
+          Chat continues across moves. New Game / load position starts a new session.
+        </div>
+      )}
+
       {phase === "revealed" && (
         <div className="coach-mode-banner coach-mode-banner-ok">
-          Answer revealed — analysis panels are visible again.
+          Answer revealed — analysis panels are visible again. Chat still continues.
         </div>
       )}
 

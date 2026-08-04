@@ -119,6 +119,18 @@ export const BUILTIN_PROVIDERS: ProviderDefinition[] = [
     supportsStreaming: true,
   },
   {
+    id: "gemini",
+    name: "Gemini",
+    requiresApiKey: true,
+    defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+    models: [
+      "gemini-3.6-flash",
+      "gemini-2.5-flash",
+      "gemini-2.5-pro",
+    ],
+    supportsStreaming: true,
+  },
+  {
     id: "ollama",
     name: "Ollama",
     requiresApiKey: false,

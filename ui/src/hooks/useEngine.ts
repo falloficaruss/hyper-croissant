@@ -1,24 +1,38 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useEngineStore } from "../stores/engineStore";
+import { useGameStore } from "../stores/gameStore";
 import type { EngineOutput } from "../types/engine";
 
 export function useEngine() {
-  const store = useEngineStore();
-  const unlistenRef = useRef<UnlistenFn | null>(null);
+  const handleEngineOutput = useEngineStore((s) => s.handleEngineOutput);
+  const engineRunning = useEngineStore((s) => s.engineRunning);
+  const depth = useEngineStore((s) => s.depth);
+  const analyzePosition = useEngineStore((s) => s.analyzePosition);
+  const fen = useGameStore((s) => s.fen);
 
   useEffect(() => {
-    async function setup() {
-      const unlisten = await listen<EngineOutput>("engine-output", (event) => {
-        store.handleEngineOutput(event.payload);
+    let unlisten: UnlistenFn | undefined;
+    let cancelled = false;
+    (async () => {
+      const fn = await listen<EngineOutput>("engine-output", (event) => {
+        handleEngineOutput(event.payload);
       });
-      unlistenRef.current = unlisten;
-    }
-    setup();
+      if (cancelled) fn();
+      else unlisten = fn;
+    })();
     return () => {
-      unlistenRef.current?.();
+      cancelled = true;
+      unlisten?.();
     };
-  }, [store]);
+  }, [handleEngineOutput]);
 
-  return store;
+  // Debounce engine searches so rapid moves/nav don't thrash UCI/IPC.
+  useEffect(() => {
+    if (!engineRunning) return;
+    const t = window.setTimeout(() => {
+      void analyzePosition(fen);
+    }, 40);
+    return () => window.clearTimeout(t);
+  }, [engineRunning, fen, depth, analyzePosition]);
 }

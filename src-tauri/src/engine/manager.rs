@@ -27,6 +27,9 @@ impl EngineManager {
         }
 
         let (engine, mut rx) = UciEngine::new(config).await?;
+        // Bring the engine into UCI mode before option/position commands.
+        engine.send(EngineCommand::Uci)?;
+        engine.send(EngineCommand::IsReady)?;
         *engine_lock = Some(engine);
 
         // Spawn output listener

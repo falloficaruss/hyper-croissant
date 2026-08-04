@@ -1,7 +1,12 @@
 /* Board container */
 .board-container {
+  width: var(--board-size, 480px);
+  height: var(--board-size, 480px);
+  max-width: 100%;
+  max-height: 100%;
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
 /* Move list */

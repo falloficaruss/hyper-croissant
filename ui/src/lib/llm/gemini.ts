@@ -1,22 +1,25 @@
 import type { ChatParams, LLMProviderImpl } from "../../types/llm";
 import { nonStreamChat, streamChat } from "./openaiCompat";
 
+const DEFAULT_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
+
 interface OpenAIMessage {
   role: "system" | "user" | "assistant";
   content: string;
 }
 
-export function createOpenAIProvider(): LLMProviderImpl {
+export function createGeminiProvider(): LLMProviderImpl {
   return {
     info: {
-      id: "openai",
-      name: "OpenAI",
+      id: "gemini",
+      name: "Gemini",
       requiresApiKey: true,
-      models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"],
+      models: ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-2.5-pro"],
       supportsStreaming: true,
     },
     chat: async (params: ChatParams): Promise<string> => {
-      const url = `${params.baseUrl ?? "https://api.openai.com/v1"}/chat/completions`;
+      const base = (params.baseUrl ?? DEFAULT_BASE).replace(/\/$/, "");
+      const url = `${base}/chat/completions`;
 
       const messages: OpenAIMessage[] = [
         { role: "system", content: params.systemPrompt },
@@ -38,14 +41,20 @@ export function createOpenAIProvider(): LLMProviderImpl {
 
       if (params.onChunk) {
         let full = "";
-        for await (const chunk of streamChat(url, body, headers, params.signal)) {
+        for await (const chunk of streamChat(
+          url,
+          body,
+          headers,
+          params.signal,
+          "Gemini",
+        )) {
           full += chunk;
           params.onChunk(chunk);
         }
         return full;
       }
 
-      return nonStreamChat(url, body, headers, params.signal);
+      return nonStreamChat(url, body, headers, params.signal, "Gemini");
     },
   };
 }

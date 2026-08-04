@@ -13,14 +13,25 @@ export function EngineControls() {
   const setMultiPV = useEngineStore((s) => s.setMultiPV);
   const setDepth = useEngineStore((s) => s.setDepth);
 
-  const [enginePath, setEnginePath] = useState("");
+  const [enginePath, setEnginePath] = useState(
+    () =>
+      (typeof localStorage !== "undefined" &&
+        localStorage.getItem("oropis-engine-path")) ||
+      "~/.local/bin/stockfish",
+  );
 
   async function handleToggle() {
     if (engineRunning) {
       await stopEngine();
     } else {
-      if (!enginePath.trim()) return;
-      await startEngine(enginePath.trim());
+      const path = enginePath.trim();
+      if (!path) return;
+      try {
+        localStorage.setItem("oropis-engine-path", path);
+      } catch {
+        // ignore
+      }
+      await startEngine(path);
     }
   }
 
@@ -37,7 +48,7 @@ export function EngineControls() {
             id="engine-path"
             className="engine-input"
             type="text"
-            placeholder="/usr/games/stockfish"
+            placeholder="~/.local/bin/stockfish"
             value={enginePath}
             onChange={(e) => setEnginePath(e.target.value)}
           />

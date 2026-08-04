@@ -4,7 +4,10 @@ import type { StructuredAnalysis } from "../types/analysis";
 
 export type CoachPhase = "idle" | "ready" | "coaching" | "revealed";
 
-interface CoachSession {
+export interface CoachSession {
+  /** Board session this chat belongs to (from gameStore.boardSessionId). */
+  boardSessionId: string;
+  /** Latest FEN discussed; moves update this without clearing chat. */
   fen: string;
   entries: ConversationEntry[];
   revealed: boolean;
@@ -13,13 +16,16 @@ interface CoachSession {
 }
 
 interface CoachState {
-  /** Whether coach mode UI is active (hides engine analysis). */
+  /** Whether coach mode UI is active (hides engine analysis until revealed). */
   enabled: boolean;
   phase: CoachPhase;
-  /** Active session for the current position. */
+  /** Active coaching chat for the current board session. */
   session: CoachSession | null;
-  /** Past sessions keyed by FEN (in-memory history). */
-  historyByFen: Record<string, CoachSession>;
+  /**
+   * Archived chats keyed by boardSessionId.
+   * Returning to a previous board session (rare) can restore that chat.
+   */
+  historyBySession: Record<string, CoachSession>;
   streaming: boolean;
   analyzing: boolean;
   error: string | null;
@@ -30,15 +36,24 @@ interface CoachState {
   setAnalyzing: (v: boolean) => void;
   setError: (error: string | null) => void;
 
-  /** Begin or resume a session for the given FEN. */
-  startSession: (fen: string, analysis: StructuredAnalysis | null) => void;
+  /** Begin or resume a coach chat for the given board session. */
+  startSession: (
+    boardSessionId: string,
+    fen: string,
+    analysis: StructuredAnalysis | null,
+  ) => void;
   appendEntry: (entry: ConversationEntry) => void;
   updateLastAssistant: (content: string) => void;
   setAnalysis: (analysis: StructuredAnalysis | null) => void;
+  /** Keep the same chat when the user moves; refresh fen + analysis. */
+  updatePosition: (fen: string, analysis?: StructuredAnalysis | null) => void;
   revealAnswer: () => void;
   endSession: () => void;
-  /** Soft-reset when the board position changes mid-session. */
-  onPositionChange: (fen: string) => void;
+  /**
+   * Called when the board is replaced (new game / load PGN/FEN/saved).
+   * Archives the current chat and opens a fresh ready state.
+   */
+  onBoardSessionChange: (boardSessionId: string) => void;
   clearError: () => void;
 }
 
@@ -48,34 +63,44 @@ function generateId(): string {
 
 export { generateId as generateCoachEntryId };
 
+function archiveSession(
+  session: CoachSession | null,
+  history: Record<string, CoachSession>,
+): Record<string, CoachSession> {
+  if (!session) return history;
+  return { ...history, [session.boardSessionId]: session };
+}
+
 export const useCoachStore = create<CoachState>((set, get) => ({
   enabled: false,
   phase: "idle",
   session: null,
-  historyByFen: {},
+  historyBySession: {},
   streaming: false,
   analyzing: false,
   error: null,
 
   setEnabled: (enabled) => {
     if (!enabled) {
-      const { session, historyByFen } = get();
-      const nextHistory = { ...historyByFen };
-      if (session) {
-        nextHistory[session.fen] = session;
-      }
+      const { session, historyBySession } = get();
       set({
         enabled: false,
         phase: "idle",
         session: null,
-        historyByFen: nextHistory,
+        historyBySession: archiveSession(session, historyBySession),
         streaming: false,
         analyzing: false,
         error: null,
       });
       return;
     }
-    set({ enabled: true, phase: "ready", error: null });
+    // Entering coach mode keeps any active session if still valid.
+    const { session } = get();
+    set({
+      enabled: true,
+      phase: session ? (session.revealed ? "revealed" : "coaching") : "ready",
+      error: null,
+    });
   },
 
   setPhase: (phase) => set({ phase }),
@@ -86,16 +111,33 @@ export const useCoachStore = create<CoachState>((set, get) => ({
 
   setError: (error) => set({ error }),
 
-  startSession: (fen, analysis) => {
-    const { historyByFen } = get();
-    const existing = historyByFen[fen];
+  startSession: (boardSessionId, fen, analysis) => {
+    const { historyBySession, session } = get();
+
+    // Already chatting on this board session — just refresh fen/analysis.
+    if (session && session.boardSessionId === boardSessionId) {
+      set({
+        session: {
+          ...session,
+          fen,
+          analysis: analysis ?? session.analysis,
+        },
+        phase: session.revealed ? "revealed" : "coaching",
+        error: null,
+      });
+      return;
+    }
+
+    const existing = historyBySession[boardSessionId];
     if (existing && existing.entries.length > 0) {
       set({
         session: {
           ...existing,
+          fen,
           analysis: analysis ?? existing.analysis,
         },
         phase: existing.revealed ? "revealed" : "coaching",
+        historyBySession: archiveSession(session, historyBySession),
         error: null,
       });
       return;
@@ -103,6 +145,7 @@ export const useCoachStore = create<CoachState>((set, get) => ({
 
     set({
       session: {
+        boardSessionId,
         fen,
         entries: [],
         revealed: false,
@@ -110,6 +153,7 @@ export const useCoachStore = create<CoachState>((set, get) => ({
         startedAt: Date.now(),
       },
       phase: "coaching",
+      historyBySession: archiveSession(session, historyBySession),
       error: null,
     });
   },
@@ -141,48 +185,66 @@ export const useCoachStore = create<CoachState>((set, get) => ({
     set({ session: { ...session, analysis } });
   },
 
+  updatePosition: (fen, analysis) => {
+    const { session } = get();
+    if (!session) return;
+    set({
+      session: {
+        ...session,
+        fen,
+        analysis: analysis !== undefined ? analysis : session.analysis,
+      },
+    });
+  },
+
   revealAnswer: () => {
-    const { session, historyByFen } = get();
+    const { session, historyBySession } = get();
     if (!session) return;
     const updated: CoachSession = { ...session, revealed: true };
     set({
       session: updated,
       phase: "revealed",
-      historyByFen: { ...historyByFen, [updated.fen]: updated },
+      historyBySession: {
+        ...historyBySession,
+        [updated.boardSessionId]: updated,
+      },
     });
   },
 
   endSession: () => {
-    const { session, historyByFen } = get();
-    const nextHistory = { ...historyByFen };
-    if (session) {
-      nextHistory[session.fen] = session;
-    }
+    const { session, historyBySession, enabled } = get();
     set({
       session: null,
-      phase: get().enabled ? "ready" : "idle",
-      historyByFen: nextHistory,
+      phase: enabled ? "ready" : "idle",
+      historyBySession: archiveSession(session, historyBySession),
       streaming: false,
       analyzing: false,
       error: null,
     });
   },
 
-  onPositionChange: (fen) => {
-    const { session, historyByFen, enabled } = get();
-    if (!enabled) return;
-
-    // Persist current session
-    const nextHistory = { ...historyByFen };
-    if (session) {
-      nextHistory[session.fen] = session;
+  onBoardSessionChange: (boardSessionId) => {
+    const { session, historyBySession, enabled } = get();
+    if (!enabled) {
+      // Still archive if we had a dangling session while disabled.
+      if (session) {
+        set({
+          session: null,
+          historyBySession: archiveSession(session, historyBySession),
+        });
+      }
+      return;
     }
 
-    const existing = nextHistory[fen];
+    // Same board session — nothing to do (moves do not change boardSessionId).
+    if (session?.boardSessionId === boardSessionId) return;
+
+    const nextHistory = archiveSession(session, historyBySession);
+    const existing = nextHistory[boardSessionId];
     if (existing && existing.entries.length > 0) {
       set({
         session: existing,
-        historyByFen: nextHistory,
+        historyBySession: nextHistory,
         phase: existing.revealed ? "revealed" : "coaching",
         streaming: false,
         analyzing: false,
@@ -191,9 +253,10 @@ export const useCoachStore = create<CoachState>((set, get) => ({
       return;
     }
 
+    // Fresh board → new coach session shell (user hits Start Session).
     set({
       session: null,
-      historyByFen: nextHistory,
+      historyBySession: nextHistory,
       phase: "ready",
       streaming: false,
       analyzing: false,

@@ -93,11 +93,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
     setProvider: (id: string) => {
       const current = get();
       const newModel = determineModel(id);
-      set({ provider: id, model: newModel, apiKey: "" });
+      set({ provider: id, model: newModel, apiKey: "", baseUrl: "" });
       savePersisted({
         provider: id,
         model: newModel,
-        baseUrl: current.baseUrl,
+        baseUrl: "",
         explanationLevel: current.explanationLevel,
         useProxy: current.useProxy,
       });
