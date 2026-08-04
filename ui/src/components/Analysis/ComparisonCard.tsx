@@ -3,6 +3,7 @@ import { useAnalysisStore } from "../../stores/analysisStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { useGameStore } from "../../stores/gameStore";
 import { resolveProvider } from "../../lib/llm";
+import { StaticBoard } from "../ChessBoard/StaticBoard";
 import type { MoveComparison } from "../../types/analysis";
 
 function formatScoreData(score: { kind: string; value: number } | null): string {
@@ -47,6 +48,11 @@ function playUci(
   makeMove(from, to, promotion);
 }
 
+function uciArrow(uci: string): { from: string; to: string } | null {
+  if (uci.length < 4) return null;
+  return { from: uci.slice(0, 2), to: uci.slice(2, 4) };
+}
+
 export function ComparisonCard() {
   const comparison = useAnalysisStore((s) => s.currentComparison);
   const loading = useAnalysisStore((s) => s.comparisonLoading);
@@ -64,6 +70,7 @@ export function ComparisonCard() {
   const currentMoveIndex = useGameStore((s) => s.currentMoveIndex);
   const navigateToMove = useGameStore((s) => s.navigateToMove);
   const makeMove = useGameStore((s) => s.makeMove);
+  const boardFlipped = useGameStore((s) => s.boardFlipped);
 
   const handlePlayMove = useCallback(
     (uci: string) => {
@@ -176,6 +183,9 @@ CRITICAL RULES:
   const problems = problemList(comparison);
   const userLabel = comparison.user_move_san ?? comparison.user_move;
   const engineLabel = comparison.engine_move_san ?? comparison.engine_move;
+  const orientation = boardFlipped ? "black" : "white";
+  const userArrow = uciArrow(comparison.user_move);
+  const engineArrow = uciArrow(comparison.engine_move);
 
   return (
     <div className="comparison-card">
@@ -216,6 +226,43 @@ CRITICAL RULES:
             {formatScoreData(comparison.engine_move_eval)}
           </span>
         </button>
+      </div>
+
+      <div className="comparison-boards">
+        <div className="comparison-board-slot">
+          <StaticBoard
+            id="cmp-user"
+            fen={comparison.fen_after_user}
+            orientation={orientation}
+            size={140}
+            arrow={userArrow ? { ...userArrow, color: "#ffffff" } : null}
+            onClick={() => handlePlayMove(comparison.user_move)}
+            ariaLabel={`Play your move ${userLabel} on the main board`}
+          />
+          <div className="comparison-board-label">
+            <span className="comparison-board-san">{userLabel}</span>
+            <span className="comparison-board-eval">
+              {formatScoreData(comparison.user_move_eval)}
+            </span>
+          </div>
+        </div>
+        <div className="comparison-board-slot">
+          <StaticBoard
+            id="cmp-engine"
+            fen={comparison.fen_after_engine}
+            orientation={orientation}
+            size={140}
+            arrow={engineArrow ? { ...engineArrow, color: "#3498db" } : null}
+            onClick={() => handlePlayMove(comparison.engine_move)}
+            ariaLabel={`Play engine move ${engineLabel} on the main board`}
+          />
+          <div className="comparison-board-label">
+            <span className="comparison-board-san">{engineLabel}</span>
+            <span className="comparison-board-eval">
+              {formatScoreData(comparison.engine_move_eval)}
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className="comparison-headline">{formatDiffPawns(comparison.eval_diff_pawns)}</div>

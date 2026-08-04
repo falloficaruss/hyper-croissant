@@ -466,6 +466,68 @@
   color: var(--text-secondary);
 }
 
+.comparison-boards {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  justify-content: center;
+  align-items: flex-start;
+  margin: 8px 0 10px;
+}
+
+.comparison-board-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.comparison-board-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 100%;
+}
+
+.comparison-board-san {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.comparison-board-eval {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Used by StaticBoard when onClick is set */
+.static-board-btn {
+  display: block;
+  padding: 0;
+  margin: 0;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.static-board-btn:hover {
+  border-color: rgba(139, 92, 246, 0.45);
+}
+
+.comparison-board-slot:first-child .static-board-btn:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.comparison-board-slot:last-child .static-board-btn:hover {
+  border-color: rgba(52, 152, 219, 0.55);
+}
+
 .comparison-headline {
   font-weight: 600;
   color: var(--text-h);
