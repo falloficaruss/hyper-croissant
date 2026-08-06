@@ -2,8 +2,10 @@ import { useCallback } from "react";
 import { severityLabel, useAnalysisStore } from "../../stores/analysisStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { resolveProvider } from "../../lib/llm";
+import { MarkdownContent } from "../LLM/MarkdownContent";
 import type { EvalSwing } from "../../types/analysis";
 import type { SwingSeverity } from "../../types/analysis";
+import "../LLM/LLM.css";
 
 function formatScoreData(score: { kind: string; value: number } | null): string {
   if (!score) return "—";
@@ -68,8 +70,8 @@ export function EvalSwingCard() {
       explanation_level: explanationLevel,
       user_question: "Why did the evaluation change after this move?",
       eval_swing: {
-        user_move: swing.user_move,
-        user_move_san: swing.user_move_san,
+        user_move: swing.user_move_san ?? swing.user_move,
+        user_move_uci: swing.user_move,
         eval_before: formatScoreData(swing.eval_before),
         eval_after: formatScoreData(swing.eval_after),
         swing_pawns: swing.swing_pawns,
@@ -88,7 +90,8 @@ CRITICAL RULES:
 - Do NOT invent moves, variations, or calculations.
 - Reference only the supplied consequences and tactical motifs.
 - If evidence is insufficient, say so.
-- Use standard algebraic notation (SAN).
+- Always write moves in standard algebraic notation (SAN), e.g. Nf3, O-O, Bxe5+, not UCI like g1f3.
+- Prefer user_move (SAN). Ignore user_move_uci unless the user asks for engine coordinates.
 - Match the requested explanation level.`;
 
     try {
@@ -184,7 +187,7 @@ CRITICAL RULES:
       )}
 
       {explanation && (
-        <div className="eval-swing-explanation">{explanation}</div>
+        <MarkdownContent content={explanation} className="eval-swing-explanation" />
       )}
 
       <div className="eval-swing-actions">

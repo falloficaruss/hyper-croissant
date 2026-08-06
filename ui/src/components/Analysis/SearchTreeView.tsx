@@ -3,7 +3,9 @@ import { useAnalysisStore } from "../../stores/analysisStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { useGameStore } from "../../stores/gameStore";
 import { resolveProvider } from "../../lib/llm";
+import { MarkdownContent } from "../LLM/MarkdownContent";
 import type { SearchTreeCategory, SearchTreeCluster } from "../../types/analysis";
+import "../LLM/LLM.css";
 
 function formatScoreData(score: { kind: string; value: number } | null | undefined): string {
   if (!score) return "—";
@@ -150,7 +152,9 @@ function ClusterRow({
             </div>
           )}
 
-          {explanation && <div className="search-tree-explanation">{explanation}</div>}
+          {explanation && (
+            <MarkdownContent content={explanation} className="search-tree-explanation" />
+          )}
 
           <div className="search-tree-actions">
             <button
@@ -235,8 +239,8 @@ export function SearchTreeView() {
         main_idea: main
           ? {
               label: main.label,
-              first_move: main.first_move,
-              first_move_san: main.first_move_san,
+              first_move: main.first_move_san ?? main.first_move,
+              first_move_uci: main.first_move,
               score: formatScoreData(main.best_score),
               ideas: main.ideas,
               summary: main.summary,
@@ -247,8 +251,8 @@ export function SearchTreeView() {
           id: cluster.id,
           label: cluster.label,
           category: cluster.category,
-          first_move: cluster.first_move,
-          first_move_san: cluster.first_move_san,
+          first_move: cluster.first_move_san ?? cluster.first_move,
+          first_move_uci: cluster.first_move,
           score: formatScoreData(cluster.best_score),
           eval_gap_cp: cluster.eval_gap_cp,
           ideas: cluster.ideas,
@@ -260,7 +264,7 @@ export function SearchTreeView() {
           id: c.id,
           label: c.label,
           category: c.category,
-          first_move_san: c.first_move_san,
+          first_move: c.first_move_san ?? c.first_move,
           score: formatScoreData(c.best_score),
           eval_gap_cp: c.eval_gap_cp,
         })),
@@ -273,7 +277,8 @@ CRITICAL RULES:
 - Do NOT invent moves, variations, or calculations beyond the supplied PVs and reasons.
 - Reference only the supplied ideas, why_rejected reasons, scores, and summaries.
 - If evidence is insufficient, say so.
-- Use standard algebraic notation (SAN).
+- Always write moves in standard algebraic notation (SAN), e.g. Nf3, O-O, Bxe5+, not UCI like g1f3.
+- Prefer first_move / pv_san (SAN). Ignore *_uci unless the user asks for engine coordinates.
 - Match the requested explanation level.
 - For rejected lines, focus on concrete reasons the engine prefers the main idea.
 - For the main idea, explain what strategic/tactical goals it pursues.`;

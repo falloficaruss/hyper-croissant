@@ -1,4 +1,3 @@
-import { Chess } from "chess.js";
 import { create } from "zustand";
 import type {
   ConceptEvaluation,
@@ -11,6 +10,7 @@ import type {
   SwingSeverity,
 } from "../types/analysis";
 import type { AnalysisLine, Score } from "../types/engine";
+import { uciToSan } from "../lib/chessNotation";
 import * as tauri from "../lib/tauri";
 
 /** Minimum absolute swing (cp) before we request / show a card. */
@@ -332,19 +332,7 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
       }
 
       const bestUci = top.pv?.[0] ?? null;
-      let bestMoveSan: string | null = null;
-      if (bestUci && bestUci.length >= 4) {
-        try {
-          const chess = new Chess(fen);
-          const from = bestUci.slice(0, 2);
-          const to = bestUci.slice(2, 4);
-          const promotion = bestUci.length > 4 ? bestUci[4] : undefined;
-          const move = chess.move({ from, to, promotion });
-          bestMoveSan = move?.san ?? null;
-        } catch {
-          bestMoveSan = null;
-        }
-      }
+      const bestMoveSan = bestUci ? uciToSan(fen, bestUci) : null;
 
       set({
         currentPlan: {

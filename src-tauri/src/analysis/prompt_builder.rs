@@ -1,6 +1,7 @@
 use serde_json::{json, Value};
 
 use crate::analysis::types::*;
+use crate::chess::{self, parse_fen};
 
 #[derive(Debug, Clone)]
 pub enum ExplanationLevel {
@@ -25,13 +26,16 @@ pub fn build_analysis_prompt(
     level: &ExplanationLevel,
     user_question: Option<&str>,
 ) -> Value {
+    let (best_move_san, best_move_uci, best_line_san) = best_move_fields(analysis);
     json!({
         "type": "explain_position",
         "explanation_level": level.as_str(),
         "user_question": user_question.unwrap_or("What are the key ideas in this position?"),
         "analysis": {
             "fen": analysis.fen,
-            "best_move": analysis.engine_lines.first().and_then(|l| l.pv.first()).cloned().unwrap_or_default(),
+            "best_move": best_move_san,
+            "best_move_uci": best_move_uci,
+            "best_line": best_line_san,
             "evaluation": analysis.engine_lines.first().map(|l| format_score_data(&l.score)).unwrap_or_default(),
             "concepts": {
                 "initiative": analysis.concepts.initiative,
@@ -223,12 +227,7 @@ pub fn build_coach_prompt(
     revealed: bool,
     user_message: Option<&str>,
 ) -> Value {
-    let best_move = analysis
-        .engine_lines
-        .first()
-        .and_then(|l| l.pv.first())
-        .cloned()
-        .unwrap_or_default();
+    let (best_move_san, best_move_uci, best_line_san) = best_move_fields(analysis);
     let evaluation = analysis
         .engine_lines
         .first()
@@ -251,7 +250,9 @@ pub fn build_coach_prompt(
         "conversation_history": conversation_history,
         "analysis": {
             "fen": analysis.fen,
-            "best_move": best_move,
+            "best_move": best_move_san,
+            "best_move_uci": best_move_uci,
+            "best_line": best_line_san,
             "evaluation": evaluation,
             "concepts": {
                 "initiative": analysis.concepts.initiative,
@@ -272,6 +273,27 @@ pub fn build_coach_prompt(
             })).collect::<Vec<_>>(),
         },
     })
+}
+
+/// Prefer SAN for LLM-facing move fields; keep UCI as a machine-readable twin.
+fn best_move_fields(analysis: &StructuredAnalysis) -> (String, String, Vec<String>) {
+    let empty = (String::new(), String::new(), Vec::new());
+    let Some(line) = analysis.engine_lines.first() else {
+        return empty;
+    };
+    if line.pv.is_empty() {
+        return empty;
+    }
+
+    let Ok(pos) = parse_fen(&analysis.fen) else {
+        let uci = line.pv.first().cloned().unwrap_or_default();
+        return (uci.clone(), uci, line.pv.clone());
+    };
+
+    let sans = chess::pv_to_san(&pos, &line.pv);
+    let best_san = sans.first().cloned().unwrap_or_default();
+    let best_uci = line.pv.first().cloned().unwrap_or_default();
+    (best_san, best_uci, sans)
 }
 
 #[cfg(test)]
@@ -515,7 +537,19 @@ mod tests {
         assert!(json_str.contains("coach_question"));
         assert!(json_str.contains("\"hidden\":true"));
         assert!(json_str.contains("key_ideas"));
-        assert!(json_str.contains("e2e4"));
+        // best_move is SAN; UCI remains available as best_move_uci
+        assert!(json_str.contains("\"best_move\":\"e4\""));
+        assert!(json_str.contains("\"best_move_uci\":\"e2e4\""));
+    }
+
+    #[test]
+    fn test_build_analysis_prompt_uses_san() {
+        let analysis = sample_analysis();
+        let prompt = build_analysis_prompt(&analysis, &ExplanationLevel::Standard, None);
+        let json_str = serde_json::to_string(&prompt).unwrap();
+        assert!(json_str.contains("\"best_move\":\"e4\""));
+        assert!(json_str.contains("\"best_move_uci\":\"e2e4\""));
+        assert!(json_str.contains("best_line"));
     }
 
     #[test]

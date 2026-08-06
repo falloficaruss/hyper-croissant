@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useCoachStore } from "../../stores/coachStore";
+import { MarkdownContent } from "../LLM/MarkdownContent";
 import "../LLM/LLM.css";
 import "./Coach.css";
 
@@ -60,20 +61,21 @@ export function CoachConversation({ onSend, onStop, input, setInput }: Props) {
               <div className="explanation-message-role">
                 {entry.role === "assistant" ? "Coach" : "You"}
               </div>
-              <div className="explanation-message-content">
-                {entry.content ||
-                  (showCursor ? (
+              {entry.role === "assistant" ? (
+                entry.content ? (
+                  <MarkdownContent
+                    content={entry.content}
+                    className="explanation-message-content"
+                    showCursor={streaming && isLast}
+                  />
+                ) : showCursor ? (
+                  <div className="explanation-message-content">
                     <span className="explanation-cursor">▊</span>
-                  ) : (
-                    entry.content
-                  ))}
-                {streaming &&
-                  isLast &&
-                  entry.role === "assistant" &&
-                  entry.content && (
-                    <span className="explanation-cursor">▊</span>
-                  )}
-              </div>
+                  </div>
+                ) : null
+              ) : (
+                <div className="explanation-message-content">{entry.content}</div>
+              )}
             </div>
           );
         })}

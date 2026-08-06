@@ -7,6 +7,8 @@ import { resolveProvider } from "../../lib/llm";
 import { analyzePosition } from "../../lib/tauri";
 import { ExplanationLevel } from "./ExplanationLevel";
 import { LLMSettings } from "./LLMSettings";
+import { MarkdownContent } from "./MarkdownContent";
+import { pvToSan, uciToSan } from "../../lib/chessNotation";
 import type { ConversationEntry } from "../../types/llm";
 import type { EngineLineInfo, StructuredAnalysis } from "../../types/analysis";
 
@@ -21,7 +23,8 @@ CRITICAL RULES:
 - Do NOT invent moves, variations, or calculations.
 - Reference only the supplied concepts, tactics, and plan.
 - If evidence is insufficient, say so.
-- Use standard algebraic notation (SAN).
+- Always write moves in standard algebraic notation (SAN), e.g. Nf3, O-O, Bxe5+, not UCI like g1f3 or e1g1.
+- Prefer best_move / best_line (SAN). Ignore best_move_uci unless the user asks for engine coordinates.
 - Match the requested explanation level.
 
 Explanation levels:
@@ -131,18 +134,21 @@ export function ExplanationPanel({ systemPrompt = DEFAULT_SYSTEM_PROMPT }: Props
           user_question: question,
         };
         if (best) {
-          fallback.best_move = best.pv[0] ?? "";
+          const bestUci = best.pv[0] ?? "";
+          fallback.best_move = bestUci ? uciToSan(fen, bestUci) : "";
+          fallback.best_move_uci = bestUci;
           fallback.evaluation =
             best.score.type === "Cp"
               ? `${(best.score.value / 100).toFixed(2)}`
               : `mate in ${best.score.value}`;
-          fallback.best_line = best.pv.join(" ");
+          fallback.best_line = pvToSan(fen, best.pv);
         }
         return JSON.stringify(fallback);
       }
 
       const lines = analysis.engine_lines;
-      const bestMove = lines.length > 0 ? lines[0].pv[0] ?? "" : "";
+      const bestUci = lines.length > 0 ? lines[0].pv[0] ?? "" : "";
+      const bestLine = lines.length > 0 ? lines[0].pv : [];
       const evalStr =
         lines.length > 0
           ? lines[0].score.kind === "cp"
@@ -159,7 +165,9 @@ export function ExplanationPanel({ systemPrompt = DEFAULT_SYSTEM_PROMPT }: Props
       return JSON.stringify({
         type: "explain_position",
         fen: analysis.fen,
-        best_move: bestMove,
+        best_move: bestUci ? uciToSan(analysis.fen, bestUci) : "",
+        best_move_uci: bestUci,
+        best_line: bestLine.length > 0 ? pvToSan(analysis.fen, bestLine) : [],
         evaluation: evalStr,
         difference_to_second: diffToSecond,
         concepts: {
@@ -290,13 +298,23 @@ export function ExplanationPanel({ systemPrompt = DEFAULT_SYSTEM_PROMPT }: Props
             <div className="explanation-message-role">
               {entry.role === "assistant" ? "Coach" : "You"}
             </div>
-            <div className="explanation-message-content">
-              {entry.content || (streaming && entry === conversation[conversation.length - 1] ? (
-                <span className="explanation-cursor">▊</span>
-              ) : (
-                entry.content
-              ))}
-            </div>
+            {entry.role === "assistant" ? (
+              entry.content ? (
+                <MarkdownContent
+                  content={entry.content}
+                  className="explanation-message-content"
+                  showCursor={
+                    streaming && entry === conversation[conversation.length - 1]
+                  }
+                />
+              ) : streaming && entry === conversation[conversation.length - 1] ? (
+                <div className="explanation-message-content">
+                  <span className="explanation-cursor">▊</span>
+                </div>
+              ) : null
+            ) : (
+              <div className="explanation-message-content">{entry.content}</div>
+            )}
           </div>
         ))}
 

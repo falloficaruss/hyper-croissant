@@ -88,14 +88,45 @@
 }
 
 .sidebar {
-  flex: 0 1 360px;
+  flex: 0 0 var(--sidebar-width, 360px);
+  width: var(--sidebar-width, 360px);
   min-width: 280px;
-  max-width: 360px;
+  max-width: none;
+  position: relative; /* anchor for the handle */
   display: flex;
   flex-direction: column;
   border-left: 1px solid var(--border);
   overflow-x: hidden;
   overflow-y: auto; /* reach Engine / Explain / Moves below the fold */
+}
+
+.sidebar-resize-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  transform: translateX(-50%);
+  cursor: col-resize;
+  z-index: 5;
+  touch-action: none;
+  background: transparent;
+}
+
+.sidebar-resize-handle:hover,
+.sidebar-resize-handle:focus-visible {
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+body.sidebar-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+body.sidebar-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
 }
 
 .game-controls-spacer {
@@ -349,7 +380,6 @@
   font-size: 12px;
   line-height: 1.45;
   color: var(--text);
-  white-space: pre-wrap;
 }
 
 .eval-swing-actions {
@@ -587,7 +617,6 @@
   font-size: 12px;
   line-height: 1.45;
   color: var(--text);
-  white-space: pre-wrap;
 }
 
 .comparison-actions {
@@ -774,7 +803,6 @@
   font-size: 12px;
   line-height: 1.45;
   color: var(--text);
-  white-space: pre-wrap;
 }
 
 .plan-actions {
@@ -1085,7 +1113,6 @@
   border-radius: 4px;
   background: rgba(139, 92, 246, 0.08);
   color: var(--text);
-  white-space: pre-wrap;
   line-height: 1.4;
 }
 
@@ -1342,5 +1369,9 @@
     border-left: none;
     border-top: 1px solid var(--border);
     overflow-y: auto; /* sidebar sections scroll inside remaining space */
+  }
+
+  .sidebar-resize-handle {
+    display: none;
   }
 }

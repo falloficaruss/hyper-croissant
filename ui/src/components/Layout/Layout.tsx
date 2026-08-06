@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { ChessBoard } from "../ChessBoard/ChessBoard";
 import { MoveList } from "../MoveList/MoveList";
 import { PositionInfo } from "../PositionInfo/PositionInfo";
@@ -22,12 +23,70 @@ import { useCoachStore } from "../../stores/coachStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import "./Layout.css";
 
+const SIDEBAR_WIDTH_KEY = "oropis-sidebar-width";
+const DEFAULT_SIDEBAR_WIDTH = 360;
+const MIN_SIDEBAR_WIDTH = 280;
+const MAX_SIDEBAR_WIDTH = 640;
+const MIN_BOARD_AREA_WIDTH = 280;
+
+function clampSidebarWidth(n: number): number {
+  return Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, Math.round(n)));
+}
+
+function loadSidebarWidth(): number {
+  try {
+    const raw = localStorage.getItem(SIDEBAR_WIDTH_KEY);
+    if (raw == null) return DEFAULT_SIDEBAR_WIDTH;
+    const n = Number(raw);
+    if (Number.isFinite(n)) return clampSidebarWidth(n);
+  } catch {
+    // ignore
+  }
+  return DEFAULT_SIDEBAR_WIDTH;
+}
+
+function saveSidebarWidth(width: number): void {
+  try {
+    localStorage.setItem(SIDEBAR_WIDTH_KEY, String(width));
+  } catch {
+    // ignore
+  }
+}
+
+function maxSidebarForMain(mainWidth: number): number {
+  return Math.min(
+    MAX_SIDEBAR_WIDTH,
+    Math.max(MIN_SIDEBAR_WIDTH, Math.floor(mainWidth - MIN_BOARD_AREA_WIDTH)),
+  );
+}
+
 export function Layout() {
   const toggleFlip = useGameStore((s) => s.toggleFlip);
   const coachEnabled = useCoachStore((s) => s.enabled);
   const coachPhase = useCoachStore((s) => s.phase);
   const setCoachEnabled = useCoachStore((s) => s.setEnabled);
   const setSettingsOpen = useSettingsStore((s) => s.setSettingsOpen);
+
+  const [sidebarWidth, setSidebarWidth] = useState(loadSidebarWidth);
+  const mainRef = useRef<HTMLElement>(null);
+  const draggingRef = useRef(false);
+  const sidebarWidthRef = useRef(sidebarWidth);
+
+  useEffect(() => {
+    sidebarWidthRef.current = sidebarWidth;
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    function clampToViewport() {
+      const main = mainRef.current;
+      if (!main) return;
+      const maxForViewport = maxSidebarForMain(main.getBoundingClientRect().width);
+      setSidebarWidth((w) => Math.min(w, maxForViewport));
+    }
+    clampToViewport();
+    window.addEventListener("resize", clampToViewport);
+    return () => window.removeEventListener("resize", clampToViewport);
+  }, []);
 
   // Hide spoilers while coaching (until answer is revealed)
   const hideAnalysis = coachEnabled && coachPhase !== "revealed";
@@ -51,6 +110,44 @@ export function Layout() {
       s.searchTreeError !== null,
   );
 
+  function onResizePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(max-width: 800px)").matches
+    ) {
+      return;
+    }
+    e.preventDefault();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    draggingRef.current = true;
+    document.body.classList.add("sidebar-resizing");
+  }
+
+  function onResizePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!draggingRef.current) return;
+    const main = mainRef.current;
+    if (!main) return;
+    const mainRect = main.getBoundingClientRect();
+    const raw = mainRect.right - e.clientX;
+    const maxForViewport = maxSidebarForMain(mainRect.width);
+    const next = Math.min(
+      maxForViewport,
+      Math.max(MIN_SIDEBAR_WIDTH, Math.round(raw)),
+    );
+    sidebarWidthRef.current = next;
+    setSidebarWidth(next);
+  }
+
+  function onResizePointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
+    const el = e.target as HTMLElement;
+    if (el.hasPointerCapture(e.pointerId)) {
+      el.releasePointerCapture(e.pointerId);
+    }
+    document.body.classList.remove("sidebar-resizing");
+    saveSidebarWidth(sidebarWidthRef.current);
+  }
 
   return (
     <div className="app-layout">
@@ -82,14 +179,34 @@ export function Layout() {
           </button>
         </div>
       </header>
-      <main className="app-main">
+      <main className="app-main" ref={mainRef}>
         <section className="board-area">
           <EvalBar hideNumbers={hideAnalysis} />
           <div className="board-panel">
             <ChessBoard hideBestMove={hideAnalysis} />
           </div>
         </section>
-        <aside className="sidebar">
+        <aside
+          className="sidebar"
+          style={
+            {
+              ["--sidebar-width" as string]: `${sidebarWidth}px`,
+            } as React.CSSProperties
+          }
+        >
+          <div
+            className="sidebar-resize-handle"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize sidebar"
+            aria-valuemin={MIN_SIDEBAR_WIDTH}
+            aria-valuemax={MAX_SIDEBAR_WIDTH}
+            aria-valuenow={sidebarWidth}
+            onPointerDown={onResizePointerDown}
+            onPointerMove={onResizePointerMove}
+            onPointerUp={onResizePointerUp}
+            onPointerCancel={onResizePointerUp}
+          />
           <div className="sidebar-section">
             <GameList />
           </div>

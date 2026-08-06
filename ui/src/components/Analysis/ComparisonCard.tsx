@@ -4,7 +4,9 @@ import { useSettingsStore } from "../../stores/settingsStore";
 import { useGameStore } from "../../stores/gameStore";
 import { resolveProvider } from "../../lib/llm";
 import { StaticBoard } from "../ChessBoard/StaticBoard";
+import { MarkdownContent } from "../LLM/MarkdownContent";
 import type { MoveComparison } from "../../types/analysis";
+import "../LLM/LLM.css";
 
 function formatScoreData(score: { kind: string; value: number } | null): string {
   if (!score) return "—";
@@ -102,10 +104,10 @@ export function ComparisonCard() {
       explanation_level: explanationLevel,
       user_question: "Why was my move worse?",
       comparison: {
-        user_move: comparison.user_move,
-        engine_move: comparison.engine_move,
-        user_move_san: comparison.user_move_san,
-        engine_move_san: comparison.engine_move_san,
+        user_move: comparison.user_move_san ?? comparison.user_move,
+        engine_move: comparison.engine_move_san ?? comparison.engine_move,
+        user_move_uci: comparison.user_move,
+        engine_move_uci: comparison.engine_move,
         user_move_eval: formatScoreData(comparison.user_move_eval),
         engine_move_eval: formatScoreData(comparison.engine_move_eval),
         eval_diff_cp: comparison.eval_diff_cp,
@@ -126,7 +128,8 @@ CRITICAL RULES:
 - Do NOT invent moves, variations, or calculations.
 - Reference only the supplied concepts, tactics, strategic differences, and why_engine points.
 - If evidence is insufficient, say so.
-- Use standard algebraic notation (SAN).
+- Always write moves in standard algebraic notation (SAN), e.g. Nf3, O-O, Bxe5+, not UCI like g1f3.
+- Prefer user_move / engine_move (SAN). Ignore *_uci unless the user asks for engine coordinates.
 - Match the requested explanation level.`;
 
     try {
@@ -290,7 +293,7 @@ CRITICAL RULES:
       )}
 
       {explanation && (
-        <div className="comparison-explanation">{explanation}</div>
+        <MarkdownContent content={explanation} className="comparison-explanation" />
       )}
 
       <div className="comparison-actions">

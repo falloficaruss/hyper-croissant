@@ -1,12 +1,14 @@
 import type { StructuredAnalysis } from "../../types/analysis";
 import type { ConversationEntry, ExplanationLevel } from "../../types/llm";
+import { pvToSan, uciToSan } from "../../lib/chessNotation";
 
 export const COACH_SYSTEM_PROMPT = `You are an interactive chess coach working with a club-level player.
 
 CRITICAL RULES:
 - You may ONLY use the supplied structured analysis JSON and the live board fen.
 - Do NOT invent moves, variations, or calculations beyond the supplied data.
-- Use standard algebraic notation (SAN) when referring to moves that appear in the data.
+- Always write moves in standard algebraic notation (SAN), e.g. Nf3, O-O, Bxe5+, not UCI like g1f3 or e1g1.
+- Prefer best_move / best_line (SAN). Ignore best_move_uci unless the user asks for engine coordinates.
 - Match the requested explanation_level.
 - Be conversational and encouraging, like a human coach.
 - The conversation may span multiple moves in one game. Always coach the CURRENT fen
@@ -48,10 +50,14 @@ function formatEval(analysis: StructuredAnalysis): string {
 
 function analysisPayload(analysis: StructuredAnalysis) {
   const lines = analysis.engine_lines;
-  const bestMove = lines.length > 0 ? (lines[0].pv[0] ?? "") : "";
+  const bestUci = lines.length > 0 ? (lines[0].pv[0] ?? "") : "";
+  const bestLine = lines.length > 0 ? lines[0].pv : [];
+  const bestLineSan = bestLine.length > 0 ? pvToSan(analysis.fen, bestLine) : [];
   return {
     fen: analysis.fen,
-    best_move: bestMove,
+    best_move: bestUci ? uciToSan(analysis.fen, bestUci) : "",
+    best_move_uci: bestUci,
+    best_line: bestLineSan,
     evaluation: formatEval(analysis),
     concepts: {
       initiative: analysis.concepts.initiative,

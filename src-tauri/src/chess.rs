@@ -117,6 +117,48 @@ pub fn make_move(pos: &Chess, uci_str: &str) -> Result<Chess, String> {
         .map_err(|e| format!("Move failed: {:?}", e))
 }
 
+/// Convert one UCI move to SAN from `pos`. Falls back to the UCI string on failure.
+pub fn uci_to_san(pos: &Chess, uci_str: &str) -> String {
+    match play_uci_with_san(pos, uci_str) {
+        Ok((_, san)) => san,
+        Err(_) => uci_str.to_string(),
+    }
+}
+
+/// Convert a UCI principal variation to SAN, stopping on the first illegal move.
+pub fn pv_to_san(pos: &Chess, pv: &[String]) -> Vec<String> {
+    let mut cur = pos.clone();
+    let mut sans = Vec::with_capacity(pv.len());
+    for uci_str in pv {
+        match play_uci_with_san(&cur, uci_str) {
+            Ok((next, san)) => {
+                sans.push(san);
+                cur = next;
+            }
+            Err(_) => {
+                sans.push(uci_str.clone());
+                break;
+            }
+        }
+    }
+    sans
+}
+
+fn play_uci_with_san(pos: &Chess, uci_str: &str) -> Result<(Chess, String), String> {
+    let uci = UciMove::from_ascii(uci_str.as_bytes())
+        .map_err(|e| format!("Invalid UCI: {}", e))?;
+    let mv = uci
+        .to_move(pos)
+        .map_err(|_| format!("Illegal move: {}", uci_str))?;
+    let san = San::from_move(pos, mv.clone()).to_string();
+    let after = pos
+        .clone()
+        .play(mv)
+        .map_err(|e| format!("Move failed: {:?}", e))?;
+    Ok((after, san))
+}
+
+
 pub fn make_move_with_data(pos: &Chess, uci_str: &str) -> Result<MoveResult, String> {
     let uci = UciMove::from_ascii(uci_str.as_bytes())
         .map_err(|e| format!("Invalid UCI: {}", e))?;
@@ -671,6 +713,20 @@ mod tests {
             }
             Err(e) => panic!("promotion move failed: {}", e),
         }
+    }
+
+    #[test]
+    fn test_uci_to_san_and_pv() {
+        let pos = parse_fen(START_FEN).unwrap();
+        assert_eq!(uci_to_san(&pos, "e2e4"), "e4");
+        assert_eq!(uci_to_san(&pos, "g1f3"), "Nf3");
+        assert_eq!(
+            pv_to_san(
+                &pos,
+                &["e2e4".to_string(), "e7e5".to_string(), "g1f3".to_string()]
+            ),
+            vec!["e4".to_string(), "e5".to_string(), "Nf3".to_string()]
+        );
     }
 }
 

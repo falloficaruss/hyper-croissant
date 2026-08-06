@@ -2,7 +2,9 @@ import { useCallback, useState } from "react";
 import { useAnalysisStore } from "../../stores/analysisStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { resolveProvider } from "../../lib/llm";
+import { MarkdownContent } from "../LLM/MarkdownContent";
 import type { PlanSkeleton } from "../../types/analysis";
+import "../LLM/LLM.css";
 
 function planHasContent(plan: PlanSkeleton): boolean {
   return (
@@ -86,8 +88,8 @@ export function PlanCard() {
       type: "explain_plan",
       explanation_level: explanationLevel,
       user_question: `What's the plan after ${moveLabel}?`,
-      best_move: planData.bestMoveUci,
-      best_move_san: planData.bestMoveSan,
+      best_move: planData.bestMoveSan ?? planData.bestMoveUci ?? "",
+      best_move_uci: planData.bestMoveUci,
       plan: planData.plan,
       concepts: {
         initiative: planData.concepts.initiative,
@@ -104,7 +106,8 @@ CRITICAL RULES:
 - Do NOT invent moves, variations, or calculations.
 - Reference only the supplied plan steps (immediate, medium, long_term), key ideas, and strategic summary.
 - If evidence is insufficient, say so.
-- Use standard algebraic notation (SAN).
+- Always write moves in standard algebraic notation (SAN), e.g. Nf3, O-O, Bxe5+, not UCI like g1f3.
+- Prefer best_move (SAN). Ignore best_move_uci unless the user asks for engine coordinates.
 - Match the requested explanation level.
 - Structure your answer around the plan timeline: immediate idea → short-term plan → long-term goal.`;
 
@@ -217,7 +220,7 @@ CRITICAL RULES:
       </div>
 
       {explanation && (
-        <div className="plan-explanation">{explanation}</div>
+        <MarkdownContent content={explanation} className="plan-explanation" />
       )}
 
       <div className="plan-actions">

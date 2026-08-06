@@ -58,10 +58,3 @@ export function formatScore(score: Score | null): string {
   return score.value > 0 ? `+#${score.value}` : `-#${Math.abs(score.value)}`;
 }
 
-export function uciToSan(uci: string): string {
-  if (uci.length < 4) return uci;
-  const from = uci.slice(0, 2);
-  const to = uci.slice(2, 4);
-  const promotion = uci.length > 4 ? `=${uci[4].toUpperCase()}` : "";
-  return `${from}-${to}${promotion}`;
-}
