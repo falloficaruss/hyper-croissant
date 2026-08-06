@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oropis — AI-Powered Chess Intelligence</title>
+  <meta name="description" content="An open-source desktop chess analysis app that understands WHY a move is best. Symbolic chess intelligence + LLM explanations for club-level players.">
+  <meta name="theme-color" content="#0a0e1a">
+  <meta property="og:title" content="Oropis — AI-Powered Chess Intelligence">
+  <meta property="og:description" content="An open-source desktop chess analysis app that understands WHY a move is best.">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/home.css">
+</head>
+<body>
+
+  <!-- ── Navigation ── -->
+  <nav class="nav" id="main-nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg class="nav-logo-icon" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" stroke="url(#logoGrad)" stroke-width="2.5"/><path d="M16 8l-2 6h-5l4 3-1.5 5L16 19l4.5 3L19 17l4-3h-5L16 8z" fill="url(#logoGrad)"/><defs><linearGradient id="logoGrad" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#c084fc"/><stop offset="1" stop-color="#60a5fa"/></linearGradient></defs></svg>
+        Oropis
+      </a>
+      <button class="nav-hamburger" id="nav-toggle" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="nav-links" id="nav-links">
+        <a href="/#features" class="nav-link">Features</a>
+        <a href="/docs.html" class="nav-link">Documentation</a>
+        <a href="/download.html" class="nav-link">Download</a>
+        <a href="/about.html" class="nav-link">About</a>
+        <a href="https://github.com/falloficaruss/oropis" target="_blank" rel="noopener" class="nav-link">GitHub ↗</a>
+        <a href="/download.html" class="nav-link nav-link--cta">Get Oropis</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="container hero-inner">
+      <div class="hero-content">
+        <div class="hero-eyebrow">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          Open Source · Cross-Platform · Free
+        </div>
+        <h1 class="hero-title">
+          <span class="gradient-text">Oropis</span>
+        </h1>
+        <p class="hero-subtitle">
+          An open-source desktop app that understands <strong>why</strong> a move is best, not just which one. Symbolic chess intelligence meets AI-powered explanations.
+        </p>
+        <div class="hero-actions">
+          <a href="/download.html" class="btn btn-primary btn-lg">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Download v0.1.0
+          </a>
+          <a href="/docs.html" class="btn btn-secondary btn-lg">View Documentation</a>
+        </div>
+        <div class="hero-platforms">
+          <span class="platform-badge">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.504 0c-.155 0-.311.002-.465.014C8.632.155 5.694 2.252 4.69 5.258c-.393 1.18-.553 2.437-.43 3.665.064.638.192 1.27.381 1.882.096.312.207.617.333.915l.248.526c.066.126.138.247.214.365.3.47.65.898 1.05 1.273.15.14.32.256.47.39.13.114.24.245.36.365l.106.106c.28.27.52.562.72.878.19.301.34.63.45.975.04.13.07.265.095.4.02.12.035.245.045.37 0 .06 0 .12-.005.18-.02.28-.07.56-.14.835-.07.27-.165.53-.285.77-.06.12-.125.24-.195.355a3.07 3.07 0 01-.52.605l-.13.115c-.11.1-.22.19-.33.285a5.02 5.02 0 00-.75.795c-.22.31-.38.65-.47 1.015-.045.175-.07.36-.075.545-.01.185.01.375.055.555.04.18.1.35.185.515.25.5.63.89 1.09 1.14.29.16.615.265.955.305.17.02.345.025.515.015.18-.01.36-.035.535-.075.35-.08.685-.21.995-.39.155-.09.305-.19.445-.3.14-.11.27-.23.395-.355.125-.125.245-.255.355-.39.11-.14.21-.285.305-.435.2-.31.365-.65.49-1.01.12-.36.2-.735.24-1.12.04-.385.03-.78-.03-1.165-.06-.39-.17-.77-.325-1.13-.155-.365-.355-.71-.6-1.02-.245-.315-.53-.6-.85-.84a5.55 5.55 0 00-.235-.17c-.08-.055-.165-.105-.25-.15l-.08-.045c-.35-.195-.67-.43-.95-.705-.28-.28-.52-.6-.7-.955-.18-.36-.3-.745-.365-1.145-.035-.2-.05-.405-.05-.61 0-.205.02-.41.06-.61.08-.4.225-.78.43-1.13.21-.35.47-.665.78-.93.31-.27.66-.49 1.04-.66.38-.17.785-.28 1.2-.33.21-.025.42-.035.63-.03.21.01.42.03.625.07.41.075.805.21 1.17.395.37.19.7.43.99.72.29.285.54.615.74.975.2.36.345.75.43 1.16.09.41.12.84.09 1.265-.03.42-.12.84-.265 1.235-.145.4-.34.77-.585 1.11a5.03 5.03 0 01-.395.48c-.145.16-.3.305-.465.44-.165.13-.34.25-.52.355-.18.105-.37.195-.565.27-.39.155-.805.255-1.225.3-.42.05-.845.04-1.265-.025-.42-.065-.83-.19-1.215-.37-.385-.18-.74-.415-1.055-.7a4.41 4.41 0 01-.395-.405l-.09-.105"/></svg>
+            Windows
+          </span>
+          <span class="platform-badge">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            macOS
+          </span>
+          <span class="platform-badge">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.504 0c-.155 0-.311.002-.465.014-.9.07-1.77.304-2.558.69A6.3 6.3 0 007.3 2.717c-.545.645-.96 1.392-1.22 2.2-.26.81-.36 1.665-.3 2.519.042.552.15 1.098.32 1.624.268.823.685 1.592 1.233 2.27L12 16l4.667-4.67c.548-.678.965-1.447 1.233-2.27.17-.526.278-1.072.32-1.624.06-.854-.04-1.71-.3-2.52-.26-.807-.675-1.554-1.22-2.199A6.3 6.3 0 0014.52.704C13.734.318 12.86.084 11.96.014 11.805.002 11.649 0 11.496 0h1.008z"/></svg>
+            Linux
+          </span>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="hero-board-wrapper">
+          <div class="hero-board" id="hero-board"></div>
+        </div>
+        <div class="hero-float-card eval">
+          <div class="label">Evaluation</div>
+          <div class="value positive">+1.8</div>
+        </div>
+        <div class="hero-float-card concept">
+          <div class="label">Key Concept</div>
+          <div class="value concept-val">Knight Outpost f5</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Features ── -->
+  <section class="section features-section" id="features">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-badge">Features</span>
+        <h2 class="section-title">Everything You Need to <span class="gradient-text">Understand Chess</span></h2>
+        <p class="section-subtitle">Not just another chess GUI. Oropis bridges the gap between engine analysis and human understanding.</p>
+      </div>
+      <div class="features-grid">
+        <div class="card reveal">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <h3 class="card-title">Chess Intelligence Layer</h3>
+          <p class="card-description">Zero-AI symbolic analysis extracts position features, identifies tactical motifs, maps strategic concepts, and detects plans — all pure chess logic before any LLM is involved.</p>
+        </div>
+        <div class="card reveal">
+          <div class="card-icon" style="background: linear-gradient(135deg, #06b6d4, #3b82f6);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </div>
+          <h3 class="card-title">AI Coach Mode</h3>
+          <p class="card-description">Interactive coaching where the AI asks you questions before revealing answers. Like working with a human coach who adapts to your level.</p>
+        </div>
+        <div class="card reveal">
+          <div class="card-icon" style="background: linear-gradient(135deg, #f59e0b, #f43f5e);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </div>
+          <h3 class="card-title">Eval Swing Explainer</h3>
+          <p class="card-description">Don't just see "blunder." Understand exactly why your move lost 2 pawns — pinned knight, weakened square, opened file for the opponent.</p>
+        </div>
+        <div class="card reveal">
+          <div class="card-icon" style="background: linear-gradient(135deg, #10b981, #06b6d4);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+          </div>
+          <h3 class="card-title">"Why Not" Comparison</h3>
+          <p class="card-description">Compare your move vs the engine's best move side-by-side with structured explanations of what you lost and what the engine preserved.</p>
+        </div>
+        <div class="card reveal">
+          <div class="card-icon" style="background: linear-gradient(135deg, #ec4899, #8b5cf6);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24"/></svg>
+          </div>
+          <h3 class="card-title">Multi-Engine Support</h3>
+          <p class="card-description">Run Stockfish, Leela Chess Zero, or any UCI-compatible engine. Built-in download manager gets you running in seconds.</p>
+        </div>
+        <div class="card reveal">
+          <div class="card-icon" style="background: linear-gradient(135deg, #6366f1, #a855f7);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+          </div>
+          <h3 class="card-title">Game Library</h3>
+          <p class="card-description">Import games from Lichess, Chess.com, or PGN files. SQLite-backed personal database with search, filter, and full metadata.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Pipeline Section ── -->
+  <section class="section pipeline-section" id="how-it-works">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-badge">Architecture</span>
+        <h2 class="section-title">How <span class="gradient-text">Oropis</span> Thinks</h2>
+        <p class="section-subtitle">A 7-stage pipeline where the LLM is the last component, not the first.</p>
+      </div>
+      <div class="pipeline-wrapper">
+        <div class="pipeline-quote reveal">
+          "The LLM is the last component, not the first."
+        </div>
+        <div class="pipeline-steps">
+          <div class="pipeline-step reveal">
+            <div class="pipeline-step-number">1</div>
+            <div class="pipeline-step-content">
+              <div class="pipeline-step-name">Stockfish Analysis</div>
+              <div class="pipeline-step-desc">UCI engine evaluates the position with multiple principal variations</div>
+            </div>
+            <span class="pipeline-step-tag no-ai">Engine</span>
+          </div>
+          <div class="pipeline-step reveal">
+            <div class="pipeline-step-number">2</div>
+            <div class="pipeline-step-content">
+              <div class="pipeline-step-name">Feature Extraction</div>
+              <div class="pipeline-step-desc">Extract king safety, pawn structure, piece activity, material balance, and more</div>
+            </div>
+            <span class="pipeline-step-tag no-ai">Zero AI</span>
+          </div>
+          <div class="pipeline-step reveal">
+            <div class="pipeline-step-number">3</div>
+            <div class="pipeline-step-content">
+              <div class="pipeline-step-name">Concept Mapping</div>
+              <div class="pipeline-step-desc">Map raw features to high-level concepts: initiative, tempo, key ideas</div>
+            </div>
+            <span class="pipeline-step-tag no-ai">Zero AI</span>
+          </div>
+          <div class="pipeline-step reveal">
+            <div class="pipeline-step-number">4</div>
+            <div class="pipeline-step-content">
+              <div class="pipeline-step-name">Tactic Detection</div>
+              <div class="pipeline-step-desc">Identify forks, pins, skewers, discovered attacks, and other tactical motifs</div>
+            </div>
+            <span class="pipeline-step-tag no-ai">Zero AI</span>
+          </div>
+          <div class="pipeline-step reveal">
+            <div class="pipeline-step-number">5</div>
+            <div class="pipeline-step-content">
+              <div class="pipeline-step-name">Prompt Builder</div>
+              <div class="pipeline-step-desc">Build structured JSON from analysis — never raw engine output</div>
+            </div>
+            <span class="pipeline-step-tag no-ai">Zero AI</span>
+          </div>
+          <div class="pipeline-step reveal">
+            <div class="pipeline-step-number">6</div>
+            <div class="pipeline-step-content">
+              <div class="pipeline-step-name">LLM Translation</div>
+              <div class="pipeline-step-desc">LLM translates structured analysis into clear, level-appropriate prose</div>
+            </div>
+            <span class="pipeline-step-tag ai">Linguistic AI</span>
+          </div>
+          <div class="pipeline-step reveal">
+            <div class="pipeline-step-number">7</div>
+            <div class="pipeline-step-content">
+              <div class="pipeline-step-name">Validator</div>
+              <div class="pipeline-step-desc">Fact-check LLM output against the board state. Flag hallucinated moves or concepts</div>
+            </div>
+            <span class="pipeline-step-tag no-ai">Zero AI</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Explanation Levels ── -->
+  <section class="section levels-section" id="levels">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-badge">Explanation Levels</span>
+        <h2 class="section-title">Explanations That <span class="gradient-text">Match Your Level</span></h2>
+        <p class="section-subtitle">The same position, explained four different ways.</p>
+      </div>
+      <div class="levels-tabs reveal" id="levels-tabs">
+        <button class="level-tab active" data-level="beginner">Beginner</button>
+        <button class="level-tab" data-level="intermediate">Intermediate</button>
+        <button class="level-tab" data-level="advanced">Advanced</button>
+        <button class="level-tab" data-level="master">Master</button>
+      </div>
+      <div class="level-content reveal">
+        <div class="level-panel active" id="level-beginner">
+          <div class="level-panel-header">
+            <span class="level-panel-title">Beginner</span>
+            <span class="level-panel-elo">&lt; 1200 ELO</span>
+          </div>
+          <p>"This move attacks two pieces at the same time. The knight on f5 threatens the rook on h6 and the pawn on d4. Your opponent can only save one of them, so you win material."</p>
+        </div>
+        <div class="level-panel" id="level-intermediate">
+          <div class="level-panel-header">
+            <span class="level-panel-title">Intermediate</span>
+            <span class="level-panel-elo">1200–1800 ELO</span>
+          </div>
+          <p>"Nf5 creates a powerful outpost on f5, supported by the e4 pawn. The knight targets the weak h6 and d6 squares while creating a tactical double attack. Black cannot challenge this outpost because the g-pawn has already advanced."</p>
+        </div>
+        <div class="level-panel" id="level-advanced">
+          <div class="level-panel-header">
+            <span class="level-panel-title">Advanced</span>
+            <span class="level-panel-elo">1800–2200 ELO</span>
+          </div>
+          <p>"Nf5 exploits Black's inability to contest the dark squares after …g6. The knight dominates f5 with no viable trade, creating a permanent positional advantage. Combined with the half-open g-file and Black's weakened kingside, White has a lasting initiative targeting h6 and d6."</p>
+        </div>
+        <div class="level-panel" id="level-master">
+          <div class="level-panel-header">
+            <span class="level-panel-title">Master</span>
+            <span class="level-panel-elo">2200+ ELO</span>
+          </div>
+          <p>"After Nf5, the knight establishes permanent dominance on the dark-square complex. Black cannot play …g6 without weakening h6 further, and …Be6 allows Nxd6. The plan is Qd2-h6, doubling on the g-file with Rg1, while the knight restricts …Bf8 defensive resources. The position is strategically winning; Black's bishop pair is neutralized by the closed center."</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA ── -->
+  <section class="section cta-section">
+    <div class="container">
+      <div class="cta-content reveal">
+        <h2 class="cta-title">Ready to <span class="gradient-text">Understand Chess</span>?</h2>
+        <p class="cta-subtitle">Download Oropis and start getting explanations that actually make sense.</p>
+        <div class="hero-actions" style="justify-content: center;">
+          <a href="/download.html" class="btn btn-primary btn-lg">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Download for Free
+          </a>
+          <a href="https://github.com/falloficaruss/oropis" target="_blank" rel="noopener" class="btn btn-secondary btn-lg">
+            View on GitHub
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="footer-brand-name">
+            <svg width="24" height="24" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" stroke="url(#fLogoGrad)" stroke-width="2.5"/><path d="M16 8l-2 6h-5l4 3-1.5 5L16 19l4.5 3L19 17l4-3h-5L16 8z" fill="url(#fLogoGrad)"/><defs><linearGradient id="fLogoGrad" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#c084fc"/><stop offset="1" stop-color="#60a5fa"/></linearGradient></defs></svg>
+            Oropis
+          </div>
+          <p class="footer-brand-desc">An open-source, cross-platform chess analysis application that bridges the gap between engine analysis and human understanding.</p>
+        </div>
+        <div class="footer-links-group">
+          <div class="footer-col">
+            <h4>Product</h4>
+            <a href="/#features">Features</a>
+            <a href="/download.html">Download</a>
+            <a href="/docs.html">Documentation</a>
+          </div>
+          <div class="footer-col">
+            <h4>Community</h4>
+            <a href="https://github.com/falloficaruss/oropis" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://github.com/falloficaruss/oropis/issues" target="_blank" rel="noopener">Issues</a>
+            <a href="https://github.com/falloficaruss/oropis/discussions" target="_blank" rel="noopener">Discussions</a>
+          </div>
+          <div class="footer-col">
+            <h4>More</h4>
+            <a href="/about.html">About</a>
+            <a href="https://github.com/falloficaruss/oropis/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Oropis. Open source under MIT License.</p>
+        <div class="footer-socials">
+          <a href="https://github.com/falloficaruss/oropis" target="_blank" rel="noopener" aria-label="GitHub">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="/js/main.js"></script>
+  <script type="module" src="/js/home.js"></script>
+</body>
+</html>
