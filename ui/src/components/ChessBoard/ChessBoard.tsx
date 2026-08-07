@@ -35,10 +35,12 @@ export function ChessBoard({ hideBestMove = false }: Props) {
       ? parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom)
       : 0;
     const gap = styles ? parseFloat(styles.columnGap || styles.gap || "0") || 0 : 0;
-    const evalBarWidth = 40; // matches Layout.css .eval-bar width
+    const evalBarEl = area?.querySelector(".eval-bar") as HTMLElement | null;
+    const evalBarWidth = evalBarEl?.offsetWidth ?? 40; // matches Layout.css .eval-bar
     const availW = Math.max(0, areaW - padX - evalBarWidth - gap);
     const availH = Math.max(0, areaH - padY);
-    const next = Math.floor(Math.max(200, Math.min(availW, availH)));
+    // Floor keeps pieces usable; cap to available square budget.
+    const next = Math.floor(Math.max(160, Math.min(availW, availH, 720)));
     if (area) area.style.setProperty("--board-size", `${next}px`);
     setBoardSize((prev) => (prev === next ? prev : next));
   }, []);

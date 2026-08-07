@@ -1,7 +1,9 @@
 .app-layout {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   overflow: hidden;
 }
 
@@ -9,7 +11,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 16px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -20,11 +24,14 @@
   font-weight: 600;
   font-family: var(--heading);
   color: var(--text-h);
+  flex-shrink: 0;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
 }
 
@@ -74,7 +81,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 16px;
+  padding: clamp(8px, 1.5vw, 16px);
   overflow: hidden;
 }
 
@@ -85,12 +92,14 @@
   align-items: center;
   justify-content: center;
   flex: 0 1 auto;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .sidebar {
   flex: 0 0 var(--sidebar-width, 360px);
   width: var(--sidebar-width, 360px);
-  min-width: 280px;
+  min-width: 0; /* allow clamp via JS + media queries */
   max-width: none;
   position: relative; /* anchor for the handle */
   display: flex;
@@ -98,6 +107,7 @@
   border-left: 1px solid var(--border);
   overflow-x: hidden;
   overflow-y: auto; /* reach Engine / Explain / Moves below the fold */
+  overscroll-behavior: contain;
 }
 
 .sidebar-resize-handle {
@@ -521,6 +531,7 @@ body.sidebar-resizing * {
 .comparison-boards {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
   align-items: flex-start;
@@ -1346,7 +1357,46 @@ body.sidebar-resizing * {
   margin-top: 6px;
 }
 
+/* Medium: keep side-by-side but tighten chrome so the board keeps room */
+@media (max-width: 1100px) and (min-width: 801px) {
+  .app-header {
+    padding: 6px 12px;
+  }
+
+  .board-area {
+    padding: 10px;
+  }
+
+  .sidebar-section {
+    padding: 10px 12px;
+  }
+
+  .analysis-section {
+    min-height: 140px;
+  }
+
+  .move-list-section {
+    min-height: 120px;
+  }
+}
+
+/* Narrow / tall: stack board above sidebar */
 @media (max-width: 800px) {
+  .app-header {
+    padding: 6px 10px;
+  }
+
+  .app-title {
+    font-size: 16px;
+  }
+
+  .settings-header-btn,
+  .coach-header-btn,
+  .flip-btn {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
   .app-main {
     flex-direction: column;
     overflow-y: auto; /* allow full-page scroll when stacked content exceeds height */
@@ -1355,9 +1405,9 @@ body.sidebar-resizing * {
   .board-area {
     flex: 0 0 auto;
     width: 100%;
-    /* Give the board a stable viewport slice so ResizeObserver has non-zero height */
-    min-height: min(70vw, 50vh);
-    max-height: 60vh;
+    /* Stable viewport slice so ResizeObserver has non-zero height */
+    min-height: min(72vw, min(52vh, 52dvh));
+    max-height: min(62vh, 62dvh);
     overflow: hidden;
   }
 
@@ -1365,7 +1415,7 @@ body.sidebar-resizing * {
     flex: 1 1 auto;
     min-width: 0;
     max-width: none;
-    width: 100%;
+    width: 100% !important;
     border-left: none;
     border-top: 1px solid var(--border);
     overflow-y: auto; /* sidebar sections scroll inside remaining space */
@@ -1373,5 +1423,50 @@ body.sidebar-resizing * {
 
   .sidebar-resize-handle {
     display: none;
+  }
+
+  .comparison-boards {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .comparison-board-slot {
+    width: 100%;
+    max-width: 220px;
+  }
+
+  .engine-controls-row {
+    flex-wrap: wrap;
+  }
+
+  .explanation-level {
+    flex-wrap: wrap;
+  }
+}
+
+/* Short windows (e.g. half-height): prioritize board height */
+@media (max-height: 560px) and (min-width: 801px) {
+  .app-header {
+    padding: 4px 12px;
+  }
+
+  .board-area {
+    padding: 6px 10px;
+  }
+
+  .eval-bar {
+    width: 32px;
+  }
+
+  .eval-bar-inner {
+    width: 18px;
+  }
+}
+
+/* Very short stacked layout */
+@media (max-height: 500px) and (max-width: 800px) {
+  .board-area {
+    min-height: 180px;
+    max-height: 45vh;
   }
 }

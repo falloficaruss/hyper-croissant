@@ -14,11 +14,12 @@ export function PVLine({ line, isBest, onPlayMove }: PVLineProps) {
   const fen = useGameStore((s) => s.fen);
   const moves = line.pv.slice(0, 6);
   const hasMore = line.pv.length > 6;
+  // line.pv identity changes every engine tick; join is a stable content key
+  const pvKey = line.pv.join(" ");
   const sans = useMemo(
     () => pvToSan(fen, line.pv.slice(0, 6)),
-    // line.pv identity changes every engine tick; join is a stable content key
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [fen, line.pv.join(" ")],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- pvKey captures pv content
+    [fen, pvKey],
   );
 
   return (

@@ -25,9 +25,11 @@ import "./Layout.css";
 
 const SIDEBAR_WIDTH_KEY = "oropis-sidebar-width";
 const DEFAULT_SIDEBAR_WIDTH = 360;
-const MIN_SIDEBAR_WIDTH = 280;
+const MIN_SIDEBAR_WIDTH = 260;
 const MAX_SIDEBAR_WIDTH = 640;
-const MIN_BOARD_AREA_WIDTH = 280;
+/** Leave room for eval bar + padding + a playable board. */
+const MIN_BOARD_AREA_WIDTH = 260;
+const STACK_BREAKPOINT_PX = 800;
 
 function clampSidebarWidth(n: number): number {
   return Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, Math.round(n)));
@@ -113,7 +115,7 @@ export function Layout() {
   function onResizePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (
       typeof window.matchMedia === "function" &&
-      window.matchMedia("(max-width: 800px)").matches
+      window.matchMedia(`(max-width: ${STACK_BREAKPOINT_PX}px)`).matches
     ) {
       return;
     }
