@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useGameStore } from "../../stores/gameStore";
+import { onShortcut } from "../../lib/shortcutBus";
 import "./Game.css";
 
 export function GameControls() {
@@ -72,6 +73,20 @@ export function GameControls() {
 
   const canSave = moves.length > 0 || savedGameId != null;
 
+  // Global shortcuts (Ctrl+N / Ctrl+O / Ctrl+Shift+E) route here via the
+  // shortcut bus so these handlers stay the single source of truth. Runs on
+  // every render (no deps) so the closures always see fresh state.
+  useEffect(() => {
+    const offNew = onShortcut("new-game", () => handleNew());
+    const offOpen = onShortcut("open-file", () => fileRef.current?.click());
+    const offExport = onShortcut("export-pgn", () => void handleExport());
+    return () => {
+      offNew();
+      offOpen();
+      offExport();
+    };
+  });
+
   return (
     <div className="game-controls">
       <div className="game-controls-row">
@@ -80,6 +95,7 @@ export function GameControls() {
           className="game-btn"
           onClick={handleNew}
           disabled={isLoading}
+          title="New game (Ctrl+N)"
         >
           New
         </button>
@@ -88,7 +104,7 @@ export function GameControls() {
           className="game-btn"
           onClick={() => fileRef.current?.click()}
           disabled={isLoading}
-          title="Open a PGN file on the board"
+          title="Open a PGN file on the board (Ctrl+O)"
         >
           Open
         </button>
@@ -106,8 +122,8 @@ export function GameControls() {
           disabled={isLoading || !canSave}
           title={
             savedGameId != null
-              ? "Update saved game"
-              : "Save current game to library"
+              ? "Update saved game (Ctrl+S)"
+              : "Save current game to library (Ctrl+S)"
           }
         >
           {isLoading ? "…" : "Save"}
@@ -117,7 +133,7 @@ export function GameControls() {
           className="game-btn"
           onClick={() => void handleExport()}
           disabled={isLoading || moves.length === 0}
-          title="Copy current game PGN"
+          title="Copy current game PGN (Ctrl+Shift+E)"
         >
           Export
         </button>

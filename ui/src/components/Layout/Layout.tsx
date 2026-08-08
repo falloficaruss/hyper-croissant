@@ -159,7 +159,7 @@ export function Layout() {
           <button
             className="settings-header-btn"
             onClick={() => setSettingsOpen(true)}
-            title="LLM Settings — provider, API key, model"
+            title="LLM Settings — provider, API key, model (Ctrl+,)"
             type="button"
           >
             Settings
@@ -169,14 +169,19 @@ export function Layout() {
             onClick={() => setCoachEnabled(!coachEnabled)}
             title={
               coachEnabled
-                ? "Exit coach mode"
-                : "Enter coach mode — hide analysis and practice with questions"
+                ? "Exit coach mode (Ctrl+K)"
+                : "Enter coach mode — hide analysis and practice with questions (Ctrl+K)"
             }
             type="button"
           >
             {coachEnabled ? "Coach On" : "Coach Mode"}
           </button>
-          <button className="flip-btn" onClick={toggleFlip} title="Flip board" type="button">
+          <button
+            className="flip-btn"
+            onClick={toggleFlip}
+            title="Flip board (Ctrl+F)"
+            type="button"
+          >
             Flip Board
           </button>
         </div>
