@@ -16,7 +16,7 @@ export function EngineControls() {
   const [enginePath, setEnginePath] = useState(
     () =>
       (typeof localStorage !== "undefined" &&
-        localStorage.getItem("oropis-engine-path")) ||
+        localStorage.getItem("hyper-croissant-engine-path")) ||
       "~/.local/bin/stockfish",
   );
 
@@ -27,7 +27,7 @@ export function EngineControls() {
       const path = enginePath.trim();
       if (!path) return;
       try {
-        localStorage.setItem("oropis-engine-path", path);
+        localStorage.setItem("hyper-croissant-engine-path", path);
       } catch {
         // ignore
       }

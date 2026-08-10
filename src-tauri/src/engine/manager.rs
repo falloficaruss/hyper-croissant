@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tauri::{AppHandle, Emitter};
-use crate::error::OropisError;
+use crate::error::HyperCroissantError;
 use crate::engine::uci::{UciEngine, EngineCommand, EngineConfig};
 use tracing::error;
 
@@ -20,10 +20,10 @@ impl EngineManager {
         &self,
         config: EngineConfig,
         app_handle: AppHandle,
-    ) -> Result<(), OropisError> {
+    ) -> Result<(), HyperCroissantError> {
         let mut engine_lock = self.engine.lock().await;
         if engine_lock.is_some() {
-            return Err(OropisError::EngineAlreadyRunning);
+            return Err(HyperCroissantError::EngineAlreadyRunning);
         }
 
         let (engine, mut rx) = UciEngine::new(config).await?;
@@ -44,7 +44,7 @@ impl EngineManager {
         Ok(())
     }
 
-    pub async fn stop(&self) -> Result<(), OropisError> {
+    pub async fn stop(&self) -> Result<(), HyperCroissantError> {
         let mut engine_lock = self.engine.lock().await;
         if let Some(engine) = engine_lock.take() {
             engine.send(EngineCommand::Quit)?;
@@ -52,13 +52,13 @@ impl EngineManager {
         Ok(())
     }
 
-    pub async fn send_command(&self, cmd: EngineCommand) -> Result<(), OropisError> {
+    pub async fn send_command(&self, cmd: EngineCommand) -> Result<(), HyperCroissantError> {
         let engine_lock = self.engine.lock().await;
         if let Some(engine) = engine_lock.as_ref() {
             engine.send(cmd)?;
             Ok(())
         } else {
-            Err(OropisError::EngineNotRunning)
+            Err(HyperCroissantError::EngineNotRunning)
         }
     }
 }

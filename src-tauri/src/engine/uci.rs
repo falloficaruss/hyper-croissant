@@ -3,7 +3,7 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::mpsc;
 use serde::{Deserialize, Serialize};
-use crate::error::OropisError;
+use crate::error::HyperCroissantError;
 use tracing::{error, debug};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -58,17 +58,17 @@ pub struct UciEngine {
 }
 
 impl UciEngine {
-    pub async fn new(config: EngineConfig) -> Result<(Self, mpsc::UnboundedReceiver<EngineOutput>), OropisError> {
+    pub async fn new(config: EngineConfig) -> Result<(Self, mpsc::UnboundedReceiver<EngineOutput>), HyperCroissantError> {
         let path = expand_engine_path(&config.path);
         let mut child = Command::new(&path)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .map_err(|e| OropisError::EngineNotFound(format!("{path}: {e}")))?;
+            .map_err(|e| HyperCroissantError::EngineNotFound(format!("{path}: {e}")))?;
 
-        let stdin = child.stdin.take().ok_or_else(|| OropisError::IoError("Failed to open stdin".into()))?;
-        let stdout = child.stdout.take().ok_or_else(|| OropisError::IoError("Failed to open stdout".into()))?;
+        let stdin = child.stdin.take().ok_or_else(|| HyperCroissantError::IoError("Failed to open stdin".into()))?;
+        let stdout = child.stdout.take().ok_or_else(|| HyperCroissantError::IoError("Failed to open stdout".into()))?;
 
         let (in_tx, mut in_rx) = mpsc::unbounded_channel::<String>();
         let (out_tx, out_rx) = mpsc::unbounded_channel::<EngineOutput>();
@@ -105,7 +105,7 @@ impl UciEngine {
         Ok((Self { child, tx: in_tx }, out_rx))
     }
 
-    pub fn send(&self, cmd: EngineCommand) -> Result<(), OropisError> {
+    pub fn send(&self, cmd: EngineCommand) -> Result<(), HyperCroissantError> {
         let cmd_str = match cmd {
             EngineCommand::Uci => "uci".to_string(),
             EngineCommand::IsReady => "isready".to_string(),
@@ -133,7 +133,7 @@ impl UciEngine {
             EngineCommand::SetOption { name, value } => format!("setoption name {} value {}", name, value),
         };
 
-        self.tx.send(cmd_str).map_err(|_| OropisError::ChannelClosed)
+        self.tx.send(cmd_str).map_err(|_| HyperCroissantError::ChannelClosed)
     }
 }
 

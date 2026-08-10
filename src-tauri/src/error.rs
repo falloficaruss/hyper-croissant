@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Error, Debug, Serialize, Deserialize)]
-pub enum OropisError {
+pub enum HyperCroissantError {
     #[error("Engine not found: {0}")]
     EngineNotFound(String),
     #[error("Engine already running")]
@@ -33,8 +33,8 @@ pub enum OropisError {
     KeychainError(String),
 }
 
-impl From<std::io::Error> for OropisError {
+impl From<std::io::Error> for HyperCroissantError {
     fn from(e: std::io::Error) -> Self {
-        OropisError::IoError(e.to_string())
+        HyperCroissantError::IoError(e.to_string())
     }
 }

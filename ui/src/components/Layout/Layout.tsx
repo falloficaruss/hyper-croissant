@@ -23,7 +23,7 @@ import { useCoachStore } from "../../stores/coachStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import "./Layout.css";
 
-const SIDEBAR_WIDTH_KEY = "oropis-sidebar-width";
+const SIDEBAR_WIDTH_KEY = "hyper-croissant-sidebar-width";
 const DEFAULT_SIDEBAR_WIDTH = 360;
 const MIN_SIDEBAR_WIDTH = 260;
 const MAX_SIDEBAR_WIDTH = 640;
@@ -154,7 +154,7 @@ export function Layout() {
   return (
     <div className="app-layout">
       <header className="app-header">
-        <h1 className="app-title">Oropis</h1>
+        <h1 className="app-title">Hyper Croissant</h1>
         <div className="header-actions">
           <button
             className="settings-header-btn"

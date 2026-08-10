@@ -1,10 +1,10 @@
 [package]
-name = "oropis"
+name = "hyper-croissant"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "oropis_lib"
+name = "hyper_croissant_lib"
 path = "src/lib.rs"
 crate-type = ["cdylib", "lib"]
 
