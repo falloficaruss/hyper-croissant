@@ -69,3 +69,133 @@ input,
 textarea {
   font-family: var(--sans);
 }
+
+/* ----- Error boundaries & status banner (Phase 10) ----- */
+
+/* Full-page fallback (top-level boundary) */
+.error-page {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+  z-index: 1000;
+}
+
+.error-page-card {
+  max-width: 480px;
+  width: 100%;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+}
+
+.error-page-title {
+  margin: 0 0 12px;
+  font-size: 20px;
+}
+
+.error-page-text {
+  margin: 0 0 16px;
+  color: var(--text);
+}
+
+.error-page-details {
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.error-page-message {
+  margin: 8px 0 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.error-page-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.error-page-reload,
+.error-page-reset,
+.error-compact-reload,
+.status-banner-dismiss {
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-h);
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+}
+
+.error-page-reload:hover,
+.error-page-reset:hover,
+.error-compact-reload:hover,
+.status-banner-dismiss:hover {
+  background: var(--bg-hover);
+}
+
+/* Compact panel fallback (per-section boundaries) */
+.error-compact {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  font-size: 13px;
+}
+
+.error-compact-title {
+  font-weight: 600;
+  color: var(--text-h);
+  margin-bottom: 4px;
+}
+
+.error-compact-message {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-bottom: 10px;
+  overflow-wrap: anywhere;
+}
+
+.error-compact-reload {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+/* Global status banner (backend warning + uncaught async errors) */
+.status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--text-h);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.status-banner-warning strong {
+  color: #fbbf24; /* amber */
+}
+
+.status-banner-error strong {
+  color: #f87171; /* red */
+}
+
+.status-banner-dismiss {
+  flex: none;
+  padding: 4px 10px;
+  font-size: 12px;
+}

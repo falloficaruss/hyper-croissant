@@ -17,6 +17,8 @@ import { SearchTreeView } from "../Analysis/SearchTreeView";
 import { ExplanationPanel } from "../LLM/ExplanationPanel";
 import { LLMSettings } from "../LLM/LLMSettings";
 import { CoachMode } from "../Coach/CoachMode";
+import { ErrorBoundary } from "../shared/ErrorBoundary";
+import { StatusBanner } from "../shared/StatusBanner";
 import { useGameStore } from "../../stores/gameStore";
 import { useAnalysisStore } from "../../stores/analysisStore";
 import { useCoachStore } from "../../stores/coachStore";
@@ -186,13 +188,16 @@ export function Layout() {
           </button>
         </div>
       </header>
+      <StatusBanner />
       <main className="app-main" ref={mainRef}>
-        <section className="board-area">
-          <EvalBar hideNumbers={hideAnalysis} />
-          <div className="board-panel">
-            <ChessBoard hideBestMove={hideAnalysis} />
-          </div>
-        </section>
+        <ErrorBoundary variant="compact" label="Board">
+          <section className="board-area">
+            <EvalBar hideNumbers={hideAnalysis} />
+            <div className="board-panel">
+              <ChessBoard hideBestMove={hideAnalysis} />
+            </div>
+          </section>
+        </ErrorBoundary>
         <aside
           className="sidebar"
           style={
@@ -215,63 +220,89 @@ export function Layout() {
             onPointerCancel={onResizePointerUp}
           />
           <div className="sidebar-section">
-            <GameList />
+            <ErrorBoundary variant="compact" label="Game library">
+              <GameList />
+            </ErrorBoundary>
           </div>
           <div className="sidebar-section">
-            <GameControls />
-            <div className="game-controls-spacer">
-              <GameMetadata />
-            </div>
-            <PGNInput />
+            <ErrorBoundary variant="compact" label="Game controls">
+              <GameControls />
+              <div className="game-controls-spacer">
+                <GameMetadata />
+              </div>
+              <PGNInput />
+            </ErrorBoundary>
           </div>
           <div className="sidebar-section">
-            <PositionInfo />
+            <ErrorBoundary variant="compact" label="Position info">
+              <PositionInfo />
+            </ErrorBoundary>
           </div>
           <div className="sidebar-section">
-            <EngineControls />
+            <ErrorBoundary variant="compact" label="Engine controls">
+              <EngineControls />
+            </ErrorBoundary>
           </div>
 
           <div className={`sidebar-section${coachEnabled ? " analysis-section" : ""}`}>
-            <CoachMode />
+            <ErrorBoundary variant="compact" label="Coach">
+              <CoachMode />
+            </ErrorBoundary>
           </div>
 
           {!hideAnalysis && hasSwing && (
             <div className="sidebar-section">
-              <EvalSwingCard />
+              <ErrorBoundary variant="compact" label="Eval swing">
+                <EvalSwingCard />
+              </ErrorBoundary>
             </div>
           )}
           {!hideAnalysis && hasComparison && (
             <div className="sidebar-section">
-              <ComparisonCard />
+              <ErrorBoundary variant="compact" label="Move comparison">
+                <ComparisonCard />
+              </ErrorBoundary>
             </div>
           )}
           {!hideAnalysis && hasPlan && (
             <div className="sidebar-section">
-              <PlanCard />
+              <ErrorBoundary variant="compact" label="Plan">
+                <PlanCard />
+              </ErrorBoundary>
             </div>
           )}
           {!hideAnalysis && hasSearchTree && (
             <div className="sidebar-section">
-              <SearchTreeView />
+              <ErrorBoundary variant="compact" label="Search tree">
+                <SearchTreeView />
+              </ErrorBoundary>
             </div>
           )}
           {!hideAnalysis && (
             <div className="sidebar-section analysis-section">
-              <AnalysisPanel />
+              <ErrorBoundary variant="compact" label="Analysis">
+                <AnalysisPanel />
+              </ErrorBoundary>
             </div>
           )}
           {!coachEnabled && (
             <div className="sidebar-section analysis-section">
-              <ExplanationPanel />
+              <ErrorBoundary variant="compact" label="Explanation">
+                <ExplanationPanel />
+              </ErrorBoundary>
             </div>
           )}
           <div className="sidebar-section move-list-section">
             <h2 className="sidebar-heading">Moves</h2>
-            <MoveList />
+            <ErrorBoundary variant="compact" label="Move list">
+              <MoveList />
+            </ErrorBoundary>
           </div>
         </aside>
       </main>
-      <LLMSettings />
+      <ErrorBoundary variant="compact" label="Settings">
+        <LLMSettings />
+      </ErrorBoundary>
     </div>
   );
 }
